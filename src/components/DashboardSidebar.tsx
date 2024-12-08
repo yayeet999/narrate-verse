@@ -16,9 +16,8 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar>
-      <SidebarContent>
+      <SidebarContent className="pt-2">
         <SidebarGroup>
-          <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
