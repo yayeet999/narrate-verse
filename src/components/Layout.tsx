@@ -1,10 +1,9 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const isAuthPage = location.pathname.includes('/auth');
 
   const handleLogoClick = (e: React.MouseEvent) => {
@@ -19,9 +18,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
 
     console.log('Not on auth page, proceeding with navigation');
-    if (location.pathname !== '/') {
-      navigate('/', { replace: true });
-    }
+    window.location.href = '/';
   };
 
   return (
