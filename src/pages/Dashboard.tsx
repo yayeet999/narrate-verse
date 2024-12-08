@@ -11,6 +11,7 @@ import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import Footer from "@/components/navigation/Footer";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -19,10 +20,19 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      console.log('Signing out...');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+        toast.error('Failed to sign out');
+        return;
+      }
+      console.log('Sign out successful');
+      toast.success('Signed out successfully');
       navigate('/auth/login');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Error in sign out process:', error);
+      toast.error('An error occurred while signing out');
     }
   };
 
