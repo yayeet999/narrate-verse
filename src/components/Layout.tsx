@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from './navigation/Navbar';
+import Footer from './navigation/Footer';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -82,6 +83,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <main className="flex-1 flex flex-col">
         {children}
       </main>
+      <Footer />
     </div>
   );
 };
