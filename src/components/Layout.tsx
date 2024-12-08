@@ -8,30 +8,40 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const isAuthPage = location.pathname.includes('/auth');
 
   if (isAuthPage) {
-    return <div className="min-h-screen bg-gradient-to-br from-secondary to-primary/10">{children}</div>;
+    return <div className="min-h-screen bg-slate-50 dark:bg-slate-900">{children}</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-secondary to-primary/10">
-      <nav className="border-b border-white/10 bg-secondary/95 backdrop-blur supports-[backdrop-filter]:bg-secondary/60">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <span className="font-display text-2xl text-white">Narrately.ai</span>
+              <span className="font-display text-2xl font-semibold text-slate-900 dark:text-white">
+                Narrately.ai
+              </span>
             </Link>
             <div className="flex items-center space-x-4">
               <Link to="/pricing">
-                <Button variant="ghost" className="text-white hover:text-primary">
+                <Button 
+                  variant="ghost" 
+                  className="text-slate-700 hover:text-primary dark:text-slate-200 dark:hover:text-primary"
+                >
                   Pricing
                 </Button>
               </Link>
               <Link to="/auth/login">
-                <Button variant="ghost" className="text-white hover:text-primary">
+                <Button 
+                  variant="ghost" 
+                  className="text-slate-700 hover:text-primary dark:text-slate-200 dark:hover:text-primary"
+                >
                   Login
                 </Button>
               </Link>
               <Link to="/auth/signup">
-                <Button className="bg-primary text-white hover:bg-primary/90">
+                <Button 
+                  className="bg-primary text-white hover:bg-primary/90 hover:animate-scale-up"
+                >
                   Get Started
                 </Button>
               </Link>

@@ -25,12 +25,12 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#9b87f5",
+          DEFAULT: "#0EA5E9",
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#1A1F2C",
-          foreground: "#FFFFFF",
+          DEFAULT: "#F8FAFC",
+          foreground: "#1E293B",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -55,7 +55,7 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
-        display: ["Playfair Display", "serif"],
+        display: ["Inter", "sans-serif"],
       },
       keyframes: {
         "fade-in": {
@@ -66,10 +66,15 @@ export default {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(0)" },
         },
+        "scale-up": {
+          "0%": { transform: "scale(1)" },
+          "100%": { transform: "scale(1.05)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 0.5s ease-out",
         "slide-in": "slide-in 0.3s ease-out",
+        "scale-up": "scale-up 0.2s ease-out forwards",
       },
     },
   },
