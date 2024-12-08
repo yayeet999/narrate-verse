@@ -1,5 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { LayoutDashboard } from 'lucide-react';
 import NavLink from './NavLink';
+import { Button } from '@/components/ui/button';
 
 interface NavbarProps {
   isAuthenticated: boolean;
@@ -32,6 +34,16 @@ const Navbar = ({ isAuthenticated, isAuthPage }: NavbarProps) => {
           </Link>
 
           <div className="flex items-center space-x-4">
+            {isAuthenticated && !isAuthPage && (
+              <Button
+                variant="ghost"
+                className="hidden md:flex items-center gap-2"
+                onClick={() => navigate('/dashboard')}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                User Dashboard
+              </Button>
+            )}
             {!isAuthPage && !isAuthenticated && (
               <NavLink 
                 to="/auth/login"
