@@ -1,48 +1,140 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Routes, Route } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useQuery } from "@tanstack/react-query";
+import { AlertCircle, Plus } from "lucide-react";
 import Navbar from "@/components/navigation/Navbar";
 import Library from "./dashboard/Library";
 import Reader from "./dashboard/Reader";
 
-const DashboardOverview = () => (
-  <div className="container mx-auto max-w-7xl p-4">
-    <div className="grid gap-6">
-      <section className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-        <p className="text-muted-foreground">
-          Here's an overview of your content
-        </p>
-      </section>
+interface UserCredits {
+  credits_remaining: number;
+  subscription_tiers: {
+    name: string;
+  } | null;
+}
+
+const fetchUserCredits = async () => {
+  console.log('Fetching user credits...');
+  const { data, error } = await supabase
+    .from('user_credits')
+    .select(`
+      credits_remaining,
+      subscription_tiers (
+        name
+      )
+    `)
+    .single();
+
+  if (error) {
+    console.error('Error fetching user credits:', error);
+    throw error;
+  }
+
+  console.log('User credits fetched:', data);
+  return data as UserCredits;
+};
+
+const DashboardOverview = () => {
+  const navigate = useNavigate();
+  const { data: credits, isLoading: isLoadingCredits } = useQuery({
+    queryKey: ['userCredits'],
+    queryFn: fetchUserCredits,
+  });
+
+  const isLowOnCredits = credits?.credits_remaining < 5;
+  const tierName = credits?.subscription_tiers?.name || 'Free';
+
+  return (
+    <div className="container mx-auto max-w-7xl p-4 space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+          <p className="text-muted-foreground">
+            Here's an overview of your content
+          </p>
+        </div>
+        <Button 
+          onClick={() => navigate('/dashboard/create')} 
+          className="w-full md:w-auto"
+        >
+          <Plus className="mr-2 h-4 w-4" /> Create New Content
+        </Button>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
-          <h3 className="font-semibold">Recent Content</h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            You haven't created any content yet
-          </p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex justify-between items-center">
+              Credits Status
+              <span className={`text-sm font-normal ${isLowOnCredits ? 'text-destructive' : ''}`}>
+                {tierName} Tier
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoadingCredits ? (
+                <span className="text-muted-foreground">Loading...</span>
+              ) : (
+                `${credits?.credits_remaining || 0} Credits`
+              )}
+            </div>
+            {isLowOnCredits && tierName === 'Free' && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  You're running low on credits! Consider upgrading to continue creating content.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
-          <h3 className="font-semibold">Folders</h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            Organize your content in folders
-          </p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Content</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm text-muted-foreground">
+              Your recent drafts and stories will appear here
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
-          <h3 className="font-semibold">Quick Actions</h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            Create new content or manage existing ones
-          </p>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start"
+              onClick={() => navigate('/dashboard/library')}
+            >
+              View Library
+            </Button>
+            {isLowOnCredits && tierName === 'Free' && (
+              <Button 
+                variant="default" 
+                className="w-full justify-start"
+                onClick={() => navigate('/dashboard/subscription')}
+              >
+                Upgrade Plan
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
