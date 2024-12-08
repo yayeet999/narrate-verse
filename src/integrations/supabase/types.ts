@@ -49,17 +49,26 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          first_name: string | null
           id: string
+          last_name: string | null
+          two_factor_enabled: boolean | null
         }
         Insert: {
           created_at?: string
           email: string
+          first_name?: string | null
           id: string
+          last_name?: string | null
+          two_factor_enabled?: boolean | null
         }
         Update: {
           created_at?: string
           email?: string
+          first_name?: string | null
           id?: string
+          last_name?: string | null
+          two_factor_enabled?: boolean | null
         }
         Relationships: []
       }

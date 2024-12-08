@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import Navbar from "@/components/navigation/Navbar";
 import Library from "./dashboard/Library";
 import Reader from "./dashboard/Reader";
+import Settings from "./dashboard/Settings";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 
 const Dashboard = () => {
@@ -50,6 +51,7 @@ const Dashboard = () => {
               <Route index element={<DashboardOverview />} />
               <Route path="library" element={<Library />} />
               <Route path="read/:id" element={<Reader />} />
+              <Route path="settings" element={<Settings />} />
             </Routes>
           </main>
         </div>
