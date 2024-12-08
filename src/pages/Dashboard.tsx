@@ -1,103 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Routes, Route } from 'react-router-dom';
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
-import Navbar from "@/components/navigation/Navbar";
-import LibraryPage from "./dashboard/Library";
-import ReaderPage from "./dashboard/Reader";
-import SettingsPage from "./dashboard/Settings";
-import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
-import { MobileMenu } from "@/components/dashboard/MobileMenu";
+import { useState } from "react";
+import { Routes, Route } from "react-router-dom";
+import DashboardSidebar from "@/components/DashboardSidebar";
+import Library from "./dashboard/Library";
+import Reader from "./dashboard/Reader";
+import Settings from "./dashboard/Settings";
+import Footer from "@/components/navigation/Footer";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  useEffect(() => {
-    console.log('Dashboard mounted');
-    const checkSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('Dashboard session check:', { session, error });
-      
-      if (error) {
-        console.error('Error checking session:', error);
-        toast({
-          variant: "destructive",
-          title: "Authentication Error",
-          description: "Please sign in again",
-        });
-        navigate('/auth/login');
-        return;
-      }
-      
-      if (!session) {
-        console.log('No session found, redirecting to login');
-        navigate('/auth/login');
-      }
-    };
-    
-    checkSession();
-  }, [navigate, toast]);
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Error signing out",
-        description: error.message,
-      });
-      return;
-    }
-    toast({
-      title: "Signed out successfully",
-    });
-    navigate('/');
-  };
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-slate-900">
-      {/* Header - Full width */}
-      <div className="w-full border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Navbar isAuthenticated={true} isAuthPage={false} />
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={handleSignOut}
-              className="hidden md:flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-            <MobileMenu 
-              onSignOut={handleSignOut}
-              isOpen={isMobileMenuOpen}
-              setIsOpen={setIsMobileMenuOpen}
-            />
-          </div>
-        </div>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 flex">
+        <DashboardSidebar
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <main className="flex-1 p-4 bg-slate-50 dark:bg-slate-900">
+          <Routes>
+            <Route index element={<Library />} />
+            <Route path="read/:id" element={<Reader />} />
+            <Route path="settings" element={<Settings />} />
+          </Routes>
+        </main>
       </div>
-
-      {/* Main content area with sidebar */}
-      <div className="flex flex-1 overflow-hidden">
-        <SidebarProvider defaultOpen>
-          <DashboardSidebar />
-          <main className="flex-1 overflow-y-auto p-4">
-            <Routes>
-              <Route index element={<DashboardOverview />} />
-              <Route path="library" element={<LibraryPage />} />
-              <Route path="read/:id" element={<ReaderPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Routes>
-          </main>
-        </SidebarProvider>
-      </div>
+      <Footer />
     </div>
   );
 };
