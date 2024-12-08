@@ -31,7 +31,7 @@ const fetchUserCredits = async () => {
 
   console.log('Fetching credits for user:', session.user.id);
   
-  // First try to get existing credits
+  // First try to get existing credits with proper user_id filter
   const { data: existingCredits, error: fetchError } = await supabase
     .from('user_credits')
     .select(`
@@ -41,22 +41,31 @@ const fetchUserCredits = async () => {
       )
     `)
     .eq('user_id', session.user.id)
-    .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 error
+    .maybeSingle();
+
+  if (fetchError) {
+    console.error('Error fetching credits:', fetchError);
+    throw fetchError;
+  }
 
   if (existingCredits) {
     console.log('Found existing credits:', existingCredits);
     return existingCredits as UserCredits;
   }
 
-  // If no credits exist, let's create them
   console.log('No credits found, creating new credits record...');
   
-  // First get the free tier ID
-  const { data: freeTier } = await supabase
+  // Get the free tier ID
+  const { data: freeTier, error: tierError } = await supabase
     .from('subscription_tiers')
     .select('id')
     .eq('name', 'Free')
     .single();
+
+  if (tierError) {
+    console.error('Error fetching free tier:', tierError);
+    throw tierError;
+  }
 
   if (!freeTier?.id) {
     console.error('No free tier found');
@@ -68,14 +77,14 @@ const fetchUserCredits = async () => {
     } as UserCredits;
   }
 
-  // Create new user credits with explicit user_id to satisfy RLS
+  // Create new user credits with explicit user_id and required fields
   const { data: newCredits, error: insertError } = await supabase
     .from('user_credits')
     .insert({
-      user_id: session.user.id, // Explicitly set user_id for RLS
+      user_id: session.user.id,
       credits_remaining: 10,
       tier_id: freeTier.id,
-      last_reset: new Date().toISOString() // Add last_reset as it's required
+      last_reset: new Date().toISOString()
     })
     .select(`
       credits_remaining,
@@ -87,7 +96,7 @@ const fetchUserCredits = async () => {
 
   if (insertError) {
     console.error('Error creating user credits:', insertError);
-    throw insertError; // Throw the error to be handled by React Query
+    throw insertError;
   }
 
   console.log('Created new credits:', newCredits);
