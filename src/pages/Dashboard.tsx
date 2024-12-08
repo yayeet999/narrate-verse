@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { MobileMenu } from "@/components/dashboard/MobileMenu";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import Library from "./dashboard/Library";
 import Reader from "./dashboard/Reader";
 import Settings from "./dashboard/Settings";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import Footer from "@/components/navigation/Footer";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -33,11 +34,21 @@ const Dashboard = () => {
             <div className="font-display text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">
               Narrately.ai
             </div>
-            <MobileMenu 
-              onSignOut={handleSignOut}
-              isOpen={isMobileMenuOpen}
-              setIsOpen={setIsMobileMenuOpen}
-            />
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                onClick={handleSignOut}
+                className="hidden md:flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+              <MobileMenu 
+                onSignOut={handleSignOut}
+                isOpen={isMobileMenuOpen}
+                setIsOpen={setIsMobileMenuOpen}
+              />
+            </div>
           </div>
         </header>
 
