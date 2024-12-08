@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { BookOpen, PenLine, Sparkles, Zap } from "lucide-react";
+import { BookOpen, PenLine, Sparkles, Zap, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 
@@ -78,7 +78,19 @@ const Index = () => {
             From quick blog posts to elaborate novels, bring your stories to life.
           </p>
 
-          {!isAuthenticated && (
+          {isAuthenticated ? (
+            <div className="mt-10 flex justify-center">
+              <Link to="/dashboard">
+                <Button 
+                  size="lg"
+                  className="bg-primary text-white hover:bg-primary/90 h-12 px-8 animate-fade-in hover:animate-scale-up"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+          ) : (
             <div className="mt-10 flex justify-center gap-x-6">
               <Link to="/auth/signup">
                 <Button 
