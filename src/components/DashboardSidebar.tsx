@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar className="border-r border-slate-200 dark:border-slate-800">
-      <SidebarContent className="md:pt-17">
+      <SidebarContent className="md:pt-14">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
