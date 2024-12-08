@@ -44,7 +44,7 @@ const Navbar = ({ isAuthenticated, isAuthPage }: NavbarProps) => {
           </Link>
 
           <div className="flex items-center space-x-4">
-            {isAuthenticated && !isAuthPage && !isDashboard && (
+            {isAuthenticated && !isDashboard && (
               <>
                 {/* Desktop dashboard link */}
                 <Button
