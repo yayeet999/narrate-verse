@@ -37,11 +37,12 @@ const Library = () => {
       <h1 className="text-2xl font-bold">My Library</h1>
       
       <Tabs defaultValue="blog" className="w-full" onValueChange={(value) => setSelectedType(value as Content["type"])}>
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 md:w-auto">
           <TabsTrigger value="blog">Blogs</TabsTrigger>
           <TabsTrigger value="story">Stories</TabsTrigger>
           <TabsTrigger value="novel">Novels</TabsTrigger>
-          <TabsTrigger value="interactive_story">Interactive Stories</TabsTrigger>
+          <TabsTrigger value="interactive_story" className="hidden md:block">Interactive Stories</TabsTrigger>
+          <TabsTrigger value="interactive_story" className="md:hidden">Interactive</TabsTrigger>
         </TabsList>
 
         {["blog", "story", "novel", "interactive_story"].map((type) => (
