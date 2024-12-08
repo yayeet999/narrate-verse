@@ -1,8 +1,49 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { PenLine, Sparkles, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/auth/login");
+      }
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/auth/login");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const features = [
+    {
+      title: "Blog Posts & Articles",
+      description: "Generate engaging blog posts and articles optimized for your target audience.",
+      icon: <PenLine className="h-6 w-6 text-primary" />,
+    },
+    {
+      title: "Creative Writing",
+      description: "Create captivating stories, poems, and creative pieces with AI assistance.",
+      icon: <Sparkles className="h-6 w-6 text-primary" />,
+    },
+    {
+      title: "Marketing Copy",
+      description: "Write compelling marketing copy that converts visitors into customers.",
+      icon: <Zap className="h-6 w-6 text-primary" />,
+    },
+  ];
+
   return (
     <div className="relative">
       <div className="container mx-auto px-4 pt-20 pb-16 text-center lg:pt-32">
@@ -64,23 +105,5 @@ const Index = () => {
     </div>
   );
 };
-
-const features = [
-  {
-    title: "Blog Posts & Articles",
-    description: "Generate engaging blog posts and articles optimized for your target audience.",
-    icon: <PenLine className="h-6 w-6 text-primary" />,
-  },
-  {
-    title: "Creative Writing",
-    description: "Create captivating stories, poems, and creative pieces with AI assistance.",
-    icon: <Sparkles className="h-6 w-6 text-primary" />,
-  },
-  {
-    title: "Marketing Copy",
-    description: "Write compelling marketing copy that converts visitors into customers.",
-    icon: <Zap className="h-6 w-6 text-primary" />,
-  },
-];
 
 export default Index;
