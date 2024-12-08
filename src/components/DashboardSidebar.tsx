@@ -14,11 +14,11 @@ export function DashboardSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar>
-      <SidebarContent>
+    <Sidebar className="h-full flex-shrink-0">
+      <SidebarContent className="flex flex-col h-full">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="flex-none">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <Link to={item.url} style={{ width: '100%' }}>
