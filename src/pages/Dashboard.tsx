@@ -41,7 +41,7 @@ const fetchUserCredits = async () => {
       )
     `)
     .eq('user_id', session.user.id)
-    .single();
+    .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 error
 
   if (existingCredits) {
     console.log('Found existing credits:', existingCredits);
@@ -68,13 +68,14 @@ const fetchUserCredits = async () => {
     } as UserCredits;
   }
 
-  // Create new user credits
+  // Create new user credits with explicit user_id to satisfy RLS
   const { data: newCredits, error: insertError } = await supabase
     .from('user_credits')
     .insert({
-      user_id: session.user.id,
+      user_id: session.user.id, // Explicitly set user_id for RLS
       credits_remaining: 10,
-      tier_id: freeTier.id
+      tier_id: freeTier.id,
+      last_reset: new Date().toISOString() // Add last_reset as it's required
     })
     .select(`
       credits_remaining,
@@ -86,12 +87,7 @@ const fetchUserCredits = async () => {
 
   if (insertError) {
     console.error('Error creating user credits:', insertError);
-    return {
-      credits_remaining: 0,
-      subscription_tiers: {
-        name: 'Free'
-      }
-    } as UserCredits;
+    throw insertError; // Throw the error to be handled by React Query
   }
 
   console.log('Created new credits:', newCredits);
