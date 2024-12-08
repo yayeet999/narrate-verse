@@ -14,8 +14,8 @@ export function DashboardSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar className="border-r border-slate-200 dark:border-slate-800">
-      <SidebarContent>
+    <Sidebar className="border-r border-slate-200 dark:border-slate-800 h-screen">
+      <SidebarContent className="h-full">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

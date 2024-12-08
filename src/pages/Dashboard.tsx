@@ -61,7 +61,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
       <SidebarProvider defaultOpen>
         <DashboardSidebar />
         <div className="flex flex-1 flex-col">
@@ -85,7 +85,7 @@ const Dashboard = () => {
               </div>
             </div>
           </div>
-          <main className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900">
+          <main className="flex-1 overflow-y-auto p-4">
             <Routes>
               <Route index element={<DashboardOverview />} />
               <Route path="library" element={<LibraryPage />} />
