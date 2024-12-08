@@ -10,7 +10,12 @@ import {
 } from "@/components/ui/sidebar";
 import { menuItems } from "@/config/navigation";
 
-export function DashboardSidebar() {
+interface DashboardSidebarProps {
+  isOpen?: boolean;
+  onToggle?: () => void;
+}
+
+export function DashboardSidebar({ isOpen, onToggle }: DashboardSidebarProps) {
   const location = useLocation();
 
   return (
