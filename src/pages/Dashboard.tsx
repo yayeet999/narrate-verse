@@ -61,8 +61,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+    <div className="min-h-screen flex flex-col">
+      <div className="border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center justify-between px-4 h-16">
           <Navbar isAuthenticated={true} isAuthPage={false} />
           <div className="flex items-center gap-4">
@@ -83,7 +83,7 @@ const Dashboard = () => {
         </div>
       </div>
       <SidebarProvider defaultOpen>
-        <div className="flex-1 flex">
+        <div className="flex flex-1">
           <DashboardSidebar />
           <main className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900">
             <Routes>
