@@ -50,18 +50,6 @@ const Footer = () => {
               >
                 Pricing
               </Link>
-              <Link
-                to="/contact"
-                className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
-              >
-                Contact
-              </Link>
-              <Link
-                to="/faq"
-                className="text-sm text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
-              >
-                FAQ
-              </Link>
             </div>
           </div>
 
