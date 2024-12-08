@@ -9,6 +9,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const isAuthPage = location.pathname.includes('/auth');
+  const isPricingPage = location.pathname === '/pricing';
+  const isPublicRoute = location.pathname === '/' || isPricingPage;
 
   useEffect(() => {
     console.log('Layout mounted, checking auth state');
@@ -31,8 +33,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         } else {
           console.log('No session found in Layout');
           setIsAuthenticated(false);
-          if (!isAuthPage && location.pathname !== '/') {
-            console.log('Not on auth page without session, redirecting to login');
+          if (!isAuthPage && !isPublicRoute) {
+            console.log('Not on public route without session, redirecting to login');
             navigate('/auth/login', { replace: true });
           }
         }
@@ -56,7 +58,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         }
       } else {
         setIsAuthenticated(false);
-        if (!isAuthPage && location.pathname !== '/') {
+        if (!isAuthPage && !isPublicRoute) {
           navigate('/auth/login', { replace: true });
         }
       }
@@ -67,7 +69,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate, isAuthPage, location.pathname]);
+  }, [navigate, isAuthPage, isPublicRoute, location.pathname]);
 
   if (isLoading) {
     console.log('Layout is loading');
