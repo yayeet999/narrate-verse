@@ -61,30 +61,33 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white dark:bg-slate-900">
-      <SidebarProvider defaultOpen>
-        <DashboardSidebar />
-        <div className="flex flex-1 flex-col">
-          <div className="border-b border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between px-4 h-16">
-              <Navbar isAuthenticated={true} isAuthPage={false} />
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  onClick={handleSignOut}
-                  className="hidden md:flex items-center gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </Button>
-                <MobileMenu 
-                  onSignOut={handleSignOut}
-                  isOpen={isMobileMenuOpen}
-                  setIsOpen={setIsMobileMenuOpen}
-                />
-              </div>
-            </div>
+    <div className="flex flex-col h-screen bg-white dark:bg-slate-900">
+      {/* Header - Full width */}
+      <div className="w-full border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between px-4 h-16">
+          <Navbar isAuthenticated={true} isAuthPage={false} />
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              className="hidden md:flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+            <MobileMenu 
+              onSignOut={handleSignOut}
+              isOpen={isMobileMenuOpen}
+              setIsOpen={setIsMobileMenuOpen}
+            />
           </div>
+        </div>
+      </div>
+
+      {/* Main content area with sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        <SidebarProvider defaultOpen>
+          <DashboardSidebar />
           <main className="flex-1 overflow-y-auto p-4">
             <Routes>
               <Route index element={<DashboardOverview />} />
@@ -93,8 +96,8 @@ const Dashboard = () => {
               <Route path="settings" element={<SettingsPage />} />
             </Routes>
           </main>
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      </div>
     </div>
   );
 };
