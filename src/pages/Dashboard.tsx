@@ -61,29 +61,31 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex h-screen flex-col">
-      <div className="flex items-center justify-between px-4 h-16 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
-        <Navbar isAuthenticated={true} isAuthPage={false} />
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            onClick={handleSignOut}
-            className="hidden md:flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </Button>
-          <MobileMenu 
-            onSignOut={handleSignOut}
-            isOpen={isMobileMenuOpen}
-            setIsOpen={setIsMobileMenuOpen}
-          />
+    <div className="h-screen flex flex-col">
+      <div className="border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 h-16">
+          <Navbar isAuthenticated={true} isAuthPage={false} />
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={handleSignOut}
+              className="hidden md:flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+            <MobileMenu 
+              onSignOut={handleSignOut}
+              isOpen={isMobileMenuOpen}
+              setIsOpen={setIsMobileMenuOpen}
+            />
+          </div>
         </div>
       </div>
       <SidebarProvider defaultOpen>
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 flex">
           <DashboardSidebar />
-          <main className="flex-1 p-4 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900">
             <Routes>
               <Route index element={<DashboardOverview />} />
               <Route path="library" element={<LibraryPage />} />
