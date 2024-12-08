@@ -10,10 +10,17 @@ const Signup = () => {
   const [showVerification, setShowVerification] = useState(false);
 
   useEffect(() => {
+    console.log('Signup component mounted');
+    
     // Check if user is already logged in
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Checking if user is already logged in');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Error checking session:', error);
+      }
       if (session) {
+        console.log('User already logged in, redirecting to dashboard');
         navigate("/dashboard");
       }
     };
@@ -22,15 +29,20 @@ const Signup = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session) => {
-      console.log("Auth event:", event);
+      console.log("Auth event:", event, "Session:", session ? 'exists' : 'null');
       if (event === 'SIGNED_IN') {  // Changed from SIGNED_UP to SIGNED_IN
+        console.log('User signed in, showing verification screen');
         setShowVerification(true);
       } else if (session) {
+        console.log('Session exists, redirecting to dashboard');
         navigate("/dashboard");
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Signup component unmounting, cleaning up subscription');
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   if (showVerification) {
