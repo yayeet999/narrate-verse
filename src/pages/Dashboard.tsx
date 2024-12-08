@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
-import DashboardSidebar from "@/components/DashboardSidebar";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
 import Library from "./dashboard/Library";
 import Reader from "./dashboard/Reader";
 import Settings from "./dashboard/Settings";
