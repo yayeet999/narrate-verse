@@ -4,7 +4,6 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -15,11 +14,11 @@ export function DashboardSidebar() {
   const location = useLocation();
 
   return (
-    <Sidebar>
-      <SidebarContent className="pt-2">
+    <Sidebar className="h-full">
+      <SidebarContent className="h-full flex-grow-0">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="flex-none">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <Link to={item.url} style={{ width: '100%' }}>
