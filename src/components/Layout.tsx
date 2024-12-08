@@ -8,7 +8,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const isAuthPage = location.pathname.includes('/auth');
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
       <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
@@ -49,7 +49,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           </div>
         </div>
       </nav>
-      <main>{children}</main>
+      <main className="flex-1 flex flex-col">
+        {children}
+      </main>
     </div>
   );
 };
