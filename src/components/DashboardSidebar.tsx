@@ -1,3 +1,4 @@
+import { Link, useLocation } from "react-router-dom";
 import {
   FolderOpen,
   Library,
@@ -39,6 +40,8 @@ const menuItems = [
 ];
 
 export function DashboardSidebar() {
+  const location = useLocation();
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -48,13 +51,16 @@ export function DashboardSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    tooltip={item.title}
-                    className="w-full justify-start gap-2"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
+                  <Link to={item.url} style={{ width: '100%' }}>
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      className="w-full justify-start gap-2"
+                      isActive={location.pathname === item.url}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </Link>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
