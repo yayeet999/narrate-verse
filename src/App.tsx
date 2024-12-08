@@ -8,7 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import Dashboard from "./pages/Dashboard";
-import Navbar from "./components/navigation/Navbar";
+import PricingPage from "./pages/Pricing";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +24,7 @@ const App = () => (
               <Route index element={<Index />} />
               <Route path="/auth/login" element={<Login />} />
               <Route path="/auth/signup" element={<Signup />} />
+              <Route path="/pricing" element={<PricingPage />} />
             </Route>
             <Route path="/dashboard/*" element={<Dashboard />} />
           </Routes>
