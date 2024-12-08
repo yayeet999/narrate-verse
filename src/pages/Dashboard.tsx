@@ -61,30 +61,30 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center justify-between px-4 h-16">
-          <Navbar isAuthenticated={true} isAuthPage={false} />
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={handleSignOut}
-              className="hidden md:flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </Button>
-            <MobileMenu 
-              onSignOut={handleSignOut}
-              isOpen={isMobileMenuOpen}
-              setIsOpen={setIsMobileMenuOpen}
-            />
-          </div>
-        </div>
-      </div>
+    <div className="flex h-screen overflow-hidden">
       <SidebarProvider defaultOpen>
-        <div className="flex flex-1">
-          <DashboardSidebar />
+        <DashboardSidebar />
+        <div className="flex flex-1 flex-col">
+          <div className="border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between px-4 h-16">
+              <Navbar isAuthenticated={true} isAuthPage={false} />
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  onClick={handleSignOut}
+                  className="hidden md:flex items-center gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </Button>
+                <MobileMenu 
+                  onSignOut={handleSignOut}
+                  isOpen={isMobileMenuOpen}
+                  setIsOpen={setIsMobileMenuOpen}
+                />
+              </div>
+            </div>
+          </div>
           <main className="flex-1 overflow-y-auto p-4 bg-slate-50 dark:bg-slate-900">
             <Routes>
               <Route index element={<DashboardOverview />} />
