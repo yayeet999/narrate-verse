@@ -1,6 +1,11 @@
-import { Library as LibraryIcon, PenSquare, FolderOpen, Settings as SettingsIcon } from "lucide-react";
+import { Home, Library as LibraryIcon, PenSquare, Settings as SettingsIcon } from "lucide-react";
 
 export const menuItems = [
+  {
+    title: "Home",
+    icon: Home,
+    url: "/dashboard",
+  },
   {
     title: "Library",
     icon: LibraryIcon,
@@ -10,11 +15,6 @@ export const menuItems = [
     title: "New Content",
     icon: PenSquare,
     url: "/dashboard/new",
-  },
-  {
-    title: "Folders",
-    icon: FolderOpen,
-    url: "/dashboard/folders",
   },
   {
     title: "Settings",

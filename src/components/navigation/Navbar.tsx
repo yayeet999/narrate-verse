@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard } from 'lucide-react';
 import NavLink from './NavLink';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,9 @@ interface NavbarProps {
 
 const Navbar = ({ isAuthenticated, isAuthPage }: NavbarProps) => {
   const navigate = useNavigate();
-  console.log('Navbar rendered with:', { isAuthenticated, isAuthPage });
+  const location = useLocation();
+  const isDashboard = location.pathname.includes('/dashboard');
+  console.log('Navbar rendered with:', { isAuthenticated, isAuthPage, isDashboard });
   
   const handleLogoClick = (e: React.MouseEvent) => {
     if (isAuthenticated) {
@@ -34,7 +36,7 @@ const Navbar = ({ isAuthenticated, isAuthPage }: NavbarProps) => {
           </Link>
 
           <div className="flex items-center space-x-4">
-            {isAuthenticated && !isAuthPage && (
+            {isAuthenticated && !isAuthPage && !isDashboard && (
               <Button
                 variant="ghost"
                 className="hidden md:flex items-center gap-2"
