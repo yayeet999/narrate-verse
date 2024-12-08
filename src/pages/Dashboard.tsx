@@ -1,45 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Routes, Route, Link } from 'react-router-dom';
+import { useNavigate, Routes, Route } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Menu, LogOut, Library as LibraryIcon, PenSquare, FolderOpen, Settings as SettingsIcon } from "lucide-react";
+import { LogOut } from "lucide-react";
 import Navbar from "@/components/navigation/Navbar";
 import LibraryPage from "./dashboard/Library";
 import ReaderPage from "./dashboard/Reader";
 import SettingsPage from "./dashboard/Settings";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
-
-// Define menu items in one place to maintain consistency
-const menuItems = [
-  {
-    title: "Library",
-    icon: LibraryIcon,
-    url: "/dashboard/library",
-  },
-  {
-    title: "New Content",
-    icon: PenSquare,
-    url: "/dashboard/new",
-  },
-  {
-    title: "Folders",
-    icon: FolderOpen,
-    url: "/dashboard/folders",
-  },
-  {
-    title: "Settings",
-    icon: SettingsIcon,
-    url: "/dashboard/settings",
-  },
-];
+import { MobileMenu } from "@/components/dashboard/MobileMenu";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -88,11 +60,6 @@ const Dashboard = () => {
     navigate('/');
   };
 
-  const handleMobileNavigation = (url: string) => {
-    setIsMobileMenuOpen(false);
-    navigate(url);
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <div className="flex items-center justify-between px-4 h-16 border-b border-slate-200 dark:border-slate-800">
@@ -106,40 +73,11 @@ const Dashboard = () => {
             <LogOut className="h-4 w-4" />
             Sign Out
           </Button>
-          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <nav className="flex flex-col gap-4 pt-4">
-                {menuItems.map((item) => (
-                  <Button
-                    key={item.title}
-                    variant="ghost"
-                    className="w-full justify-start gap-2"
-                    onClick={() => handleMobileNavigation(item.url)}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.title}
-                  </Button>
-                ))}
-                <Button
-                  variant="ghost"
-                  onClick={handleSignOut}
-                  className="w-full justify-start gap-2 mt-4 border-t border-slate-200 dark:border-slate-800 pt-4"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
-                </Button>
-              </nav>
-            </SheetContent>
-          </Sheet>
+          <MobileMenu 
+            onSignOut={handleSignOut}
+            isOpen={isMobileMenuOpen}
+            setIsOpen={setIsMobileMenuOpen}
+          />
         </div>
       </div>
       <SidebarProvider defaultOpen>

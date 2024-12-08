@@ -1,11 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  FolderOpen,
-  Library,
-  PenSquare,
-  Settings,
-} from "lucide-react";
-import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -15,29 +9,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-
-const menuItems = [
-  {
-    title: "Library",
-    icon: Library,
-    url: "/dashboard/library",
-  },
-  {
-    title: "New Content",
-    icon: PenSquare,
-    url: "/dashboard/new",
-  },
-  {
-    title: "Folders",
-    icon: FolderOpen,
-    url: "/dashboard/folders",
-  },
-  {
-    title: "Settings",
-    icon: Settings,
-    url: "/dashboard/settings",
-  },
-];
+import { menuItems } from "@/config/navigation";
 
 export function DashboardSidebar() {
   const location = useLocation();
