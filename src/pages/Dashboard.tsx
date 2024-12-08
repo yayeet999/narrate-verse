@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import Navbar from "@/components/navigation/Navbar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -36,46 +37,49 @@ const Dashboard = () => {
   }, [navigate, toast]);
 
   return (
-    <SidebarProvider defaultOpen>
-      <div className="flex min-h-screen w-full bg-background">
-        <DashboardSidebar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="container mx-auto p-6">
-            <div className="grid gap-6">
-              <section>
-                <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
-                <p className="text-muted-foreground">
-                  Here's an overview of your content
-                </p>
-              </section>
-
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="rounded-lg border bg-card p-6">
-                  <h3 className="font-semibold">Recent Content</h3>
-                  <p className="text-sm text-muted-foreground">
-                    You haven't created any content yet
+    <div className="flex flex-col min-h-screen">
+      <Navbar isAuthenticated={true} isAuthPage={false} />
+      <SidebarProvider defaultOpen>
+        <div className="flex min-h-[calc(100vh-4rem)] w-full bg-background">
+          <DashboardSidebar />
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="container mx-auto max-w-7xl">
+              <div className="grid gap-6">
+                <section className="space-y-2">
+                  <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+                  <p className="text-muted-foreground">
+                    Here's an overview of your content
                   </p>
-                </div>
+                </section>
 
-                <div className="rounded-lg border bg-card p-6">
-                  <h3 className="font-semibold">Folders</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Organize your content in folders
-                  </p>
-                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
+                    <h3 className="font-semibold">Recent Content</h3>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You haven't created any content yet
+                    </p>
+                  </div>
 
-                <div className="rounded-lg border bg-card p-6">
-                  <h3 className="font-semibold">Quick Actions</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Create new content or manage existing ones
-                  </p>
+                  <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
+                    <h3 className="font-semibold">Folders</h3>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Organize your content in folders
+                    </p>
+                  </div>
+
+                  <div className="rounded-lg border bg-card p-6 hover:shadow-md transition-shadow">
+                    <h3 className="font-semibold">Quick Actions</h3>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Create new content or manage existing ones
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
-    </SidebarProvider>
+          </main>
+        </div>
+      </SidebarProvider>
+    </div>
   );
 };
 

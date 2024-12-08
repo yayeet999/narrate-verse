@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import Dashboard from "./pages/Dashboard";
+import Navbar from "./components/navigation/Navbar";
 
 const queryClient = new QueryClient();
 
@@ -17,14 +18,16 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout><Outlet /></Layout>}>
-            <Route index element={<Index />} />
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/signup" element={<Signup />} />
-          </Route>
-          <Route path="/dashboard/*" element={<Dashboard />} />
-        </Routes>
+        <div className="min-h-screen flex flex-col">
+          <Routes>
+            <Route element={<Layout><Outlet /></Layout>}>
+              <Route index element={<Index />} />
+              <Route path="/auth/login" element={<Login />} />
+              <Route path="/auth/signup" element={<Signup />} />
+            </Route>
+            <Route path="/dashboard/*" element={<Dashboard />} />
+          </Routes>
+        </div>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
