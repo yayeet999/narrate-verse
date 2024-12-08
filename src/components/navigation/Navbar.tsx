@@ -14,16 +14,8 @@ const Navbar = ({ isAuthenticated, isAuthPage }: NavbarProps) => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 justify-between items-center">
           <Link 
-            to={isAuthenticated ? "/dashboard" : "/"} 
+            to="/"
             className="flex items-center space-x-2"
-            onClick={(e) => {
-              if (isAuthPage) {
-                console.log('Preventing navigation on auth page');
-                e.preventDefault();
-              } else {
-                console.log('Allowing navigation from non-auth page');
-              }
-            }}
           >
             <span className="font-display text-2xl font-semibold text-slate-900 dark:text-white">
               Narrately.ai
@@ -31,30 +23,22 @@ const Navbar = ({ isAuthenticated, isAuthPage }: NavbarProps) => {
           </Link>
 
           <div className="flex items-center space-x-4">
-            <NavLink 
-              to="/pricing"
-              variant="ghost" 
-              className="text-slate-700 hover:text-primary dark:text-slate-200 dark:hover:text-primary"
-            >
-              Pricing
-            </NavLink>
-
             {!isAuthPage && !isAuthenticated && (
-              <>
-                <NavLink 
-                  to="/auth/login"
-                  variant="ghost" 
-                  className="text-slate-700 hover:text-primary dark:text-slate-200 dark:hover:text-primary"
-                >
-                  Login
-                </NavLink>
-                <NavLink 
-                  to="/auth/signup"
-                  className="bg-primary text-white hover:bg-primary/90 hover:animate-scale-up"
-                >
-                  Get Started
-                </NavLink>
-              </>
+              <NavLink 
+                to="/auth/login"
+                variant="ghost" 
+                className="text-slate-700 hover:text-primary dark:text-slate-200 dark:hover:text-primary"
+              >
+                Login
+              </NavLink>
+            )}
+            {!isAuthPage && !isAuthenticated && (
+              <NavLink 
+                to="/auth/signup"
+                className="bg-primary text-white hover:bg-primary/90 hover:animate-scale-up"
+              >
+                Get Started
+              </NavLink>
             )}
           </div>
         </div>
