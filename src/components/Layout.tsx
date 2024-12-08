@@ -8,8 +8,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const isAuthPage = location.pathname.includes('/auth');
 
   const handleLogoClick = (e: React.MouseEvent) => {
+    console.log('Logo clicked, current location:', location.pathname);
     e.preventDefault();
-    navigate('/');
+    console.log('Navigating to home page...');
+    navigate('/', { replace: true });
   };
 
   return (
@@ -17,15 +19,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <nav className="sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
-            <Link 
-              to="/" 
+            <button 
               onClick={handleLogoClick}
               className="flex items-center space-x-2"
             >
               <span className="font-display text-2xl font-semibold text-slate-900 dark:text-white">
                 Narrately.ai
               </span>
-            </Link>
+            </button>
             <div className="flex items-center space-x-4">
               <Link to="/pricing">
                 <Button 
