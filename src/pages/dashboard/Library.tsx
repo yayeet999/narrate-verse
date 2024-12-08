@@ -14,22 +14,6 @@ const Library = () => {
   const { toast } = useToast();
   const [selectedType, setSelectedType] = useState<Content["type"]>("blog");
 
-  const { data: userCredits } = useQuery({
-    queryKey: ["userCredits"],
-    queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
-      
-      const { data } = await supabase
-        .from("user_credits")
-        .select("*, subscription_tiers(*)")
-        .eq("user_id", session.user.id)
-        .single();
-      
-      return data;
-    }
-  });
-
   const { data: content, isLoading } = useQuery({
     queryKey: ["content", selectedType],
     queryFn: async () => {
@@ -45,21 +29,6 @@ const Library = () => {
   });
 
   const handleContentClick = (item: Content) => {
-    if (item.type === "novel" && userCredits?.subscription_tiers?.name === "Free") {
-      toast({
-        title: "Upgrade Required",
-        description: "Please upgrade your subscription to access novels.",
-        action: (
-          <button
-            onClick={() => navigate("/dashboard/settings")}
-            className="rounded bg-primary px-3 py-2 text-sm font-medium text-white"
-          >
-            Upgrade
-          </button>
-        ),
-      });
-      return;
-    }
     navigate(`/dashboard/read/${item.id}`);
   };
 
