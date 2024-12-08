@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate, Routes, Route } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
@@ -36,7 +36,7 @@ const fetchUserCredits = async () => {
 
   console.log('Fetching credits for user:', session.user.id);
   
-  // First try to get existing credits with proper user_id filter
+  // First try to get existing credits
   const { data: existingCredits, error: fetchError } = await supabase
     .from('user_credits')
     .select(`
@@ -82,7 +82,7 @@ const fetchUserCredits = async () => {
     } as UserCredits;
   }
 
-  // Create new user credits with explicit user_id and required fields
+  // Create new user credits with explicit user_id
   const { data: newCredits, error: insertError } = await supabase
     .from('user_credits')
     .insert({
