@@ -15,7 +15,7 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar className="border-r border-slate-200 dark:border-slate-800">
-      <SidebarContent className="md:pt-14">
+      <SidebarContent className="md:pt-15">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
