@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { RecentContentCard } from "./RecentContentCard";
 import { QuickActionsCard } from "./QuickActionsCard";
 
-export const DashboardOverview = () => {
+const DashboardOverview = () => {
   const navigate = useNavigate();
 
   return (
@@ -31,3 +31,5 @@ export const DashboardOverview = () => {
     </div>
   );
 };
+
+export default DashboardOverview;
