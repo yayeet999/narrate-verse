@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { CreditsCard } from "./CreditsCard";
 import { RecentContentCard } from "./RecentContentCard";
 import { QuickActionsCard } from "./QuickActionsCard";
 
@@ -25,8 +24,7 @@ export const DashboardOverview = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <CreditsCard />
+      <div className="grid gap-4 md:grid-cols-2">
         <RecentContentCard />
         <QuickActionsCard />
       </div>
