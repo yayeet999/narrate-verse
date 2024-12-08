@@ -8,10 +8,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const isAuthPage = location.pathname.includes('/auth');
 
   const handleLogoClick = (e: React.MouseEvent) => {
-    console.log('Logo clicked, current location:', location.pathname);
+    console.log('Logo clicked, preventing default behavior');
     e.preventDefault();
-    e.stopPropagation(); // Prevent any event bubbling
-    console.log('Navigating to home page...');
+    
+    // If we're on an auth page, we don't want to navigate
+    // as the auth components handle their own navigation
+    if (isAuthPage) {
+      console.log('On auth page, skipping navigation');
+      return;
+    }
+
+    console.log('Not on auth page, proceeding with navigation');
     if (location.pathname !== '/') {
       navigate('/', { replace: true });
     }
