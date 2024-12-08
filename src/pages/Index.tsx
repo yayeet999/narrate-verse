@@ -1,51 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { PenLine, Sparkles, Zap } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
 
 const Index = () => {
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        console.log("Checking user session...");
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("Session status:", session ? "logged in" : "no session");
-        
-        if (!session) {
-          console.log("No session found, redirecting to login...");
-          window.location.href = "/auth/login";
-          return;
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error checking session:", error);
-        window.location.href = "/auth/login";
-      }
-    };
-
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", _event);
-      if (!session) {
-        console.log("No session in auth state change, redirecting...");
-        window.location.href = "/auth/login";
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Don't render anything while checking auth
-  if (isLoading) {
-    console.log("Still loading, not rendering content");
-    return null;
-  }
-
   const features = [
     {
       title: "Blog Posts & Articles",

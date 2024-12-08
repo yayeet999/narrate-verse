@@ -1,57 +1,8 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    console.log("Login component mounted");
-    let mounted = true;
-
-    const checkUser = async () => {
-      try {
-        console.log("Checking initial session state");
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session && mounted) {
-          console.log("Session found, redirecting to dashboard");
-          navigate("/dashboard", { replace: true });
-        } else {
-          console.log("No session found, showing login form");
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error("Error checking session:", error);
-        if (mounted) setIsLoading(false);
-      }
-    };
-
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed in Login:", _event);
-      if (session && mounted) {
-        console.log("New session detected, redirecting to dashboard");
-        navigate("/dashboard", { replace: true });
-      }
-    });
-
-    return () => {
-      console.log("Login component unmounting");
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [navigate]);
-
-  if (isLoading) {
-    console.log("Login component is loading");
-    return null;
-  }
-
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">

@@ -1,25 +1,95 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { supabase } from "@/integrations/supabase/client";
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const isAuthPage = location.pathname.includes('/auth');
 
+  useEffect(() => {
+    console.log('Layout mounted, checking auth state');
+    let mounted = true;
+
+    const checkAuth = async () => {
+      try {
+        console.log('Checking session in Layout');
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        if (session) {
+          console.log('Session found in Layout');
+          setIsAuthenticated(true);
+          if (isAuthPage) {
+            console.log('On auth page with session, redirecting to dashboard');
+            navigate('/dashboard', { replace: true });
+          }
+        } else {
+          console.log('No session found in Layout');
+          if (!isAuthPage && location.pathname !== '/') {
+            console.log('Not on auth page without session, redirecting to login');
+            navigate('/auth/login', { replace: true });
+          }
+        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed in Layout:', _event);
+      if (!mounted) return;
+
+      if (session) {
+        setIsAuthenticated(true);
+        if (isAuthPage) {
+          navigate('/dashboard', { replace: true });
+        }
+      } else {
+        setIsAuthenticated(false);
+        if (!isAuthPage && location.pathname !== '/') {
+          navigate('/auth/login', { replace: true });
+        }
+      }
+    });
+
+    return () => {
+      console.log('Layout unmounting');
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate, isAuthPage, location.pathname]);
+
   const handleLogoClick = (e: React.MouseEvent) => {
-    console.log('Logo clicked, preventing default behavior');
     e.preventDefault();
+    console.log('Logo clicked');
     
-    // If we're on an auth page, we don't want to navigate
-    // as the auth components handle their own navigation
     if (isAuthPage) {
-      console.log('On auth page, skipping navigation');
+      console.log('On auth page, preventing navigation');
       return;
     }
 
-    console.log('Not on auth page, proceeding with navigation');
-    window.location.href = '/';
+    if (isAuthenticated) {
+      console.log('Authenticated, navigating to dashboard');
+      navigate('/dashboard');
+    } else {
+      console.log('Not authenticated, navigating to home');
+      navigate('/');
+    }
   };
+
+  if (isLoading) {
+    console.log('Layout is loading');
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
@@ -43,7 +113,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   Pricing
                 </Button>
               </Link>
-              {!isAuthPage && (
+              {!isAuthPage && !isAuthenticated && (
                 <>
                   <Link to="/auth/login">
                     <Button 
