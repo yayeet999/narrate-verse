@@ -27,6 +27,62 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_tiers: {
+        Row: {
+          created_at: string
+          credits_per_month: number
+          id: string
+          name: string
+          price_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_per_month: number
+          id?: string
+          name: string
+          price_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_per_month?: number
+          id?: string
+          name?: string
+          price_id?: string
+        }
+        Relationships: []
+      }
+      user_credits: {
+        Row: {
+          created_at: string
+          credits_remaining: number
+          last_reset: string
+          tier_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_remaining?: number
+          last_reset?: string
+          tier_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_remaining?: number
+          last_reset?: string
+          tier_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_credits_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
