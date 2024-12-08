@@ -22,7 +22,12 @@ interface UserCredits {
 
 const fetchUserCredits = async () => {
   console.log('Fetching user credits...');
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError) {
+    console.error('Session error:', sessionError);
+    throw sessionError;
+  }
   
   if (!session?.user?.id) {
     console.error('No session found when fetching credits');
