@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
+import { DashboardSidebar } from "@/components/DashboardSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -35,21 +36,46 @@ const Dashboard = () => {
   }, [navigate, toast]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="w-full max-w-4xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold">Welcome to Narrately.ai</CardTitle>
-          <CardDescription>
-            Your AI-powered writing assistant
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600 dark:text-gray-300">
-            Start creating engaging content with the help of AI. Choose from various content types and let Narrately assist you in crafting compelling stories, articles, and more.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+    <SidebarProvider defaultOpen>
+      <div className="flex min-h-screen w-full bg-background">
+        <DashboardSidebar />
+        <main className="flex-1 overflow-y-auto">
+          <div className="container mx-auto p-6">
+            <div className="grid gap-6">
+              <section>
+                <h2 className="text-2xl font-bold tracking-tight">Welcome back</h2>
+                <p className="text-muted-foreground">
+                  Here's an overview of your content
+                </p>
+              </section>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-lg border bg-card p-6">
+                  <h3 className="font-semibold">Recent Content</h3>
+                  <p className="text-sm text-muted-foreground">
+                    You haven't created any content yet
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-card p-6">
+                  <h3 className="font-semibold">Folders</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Organize your content in folders
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-card p-6">
+                  <h3 className="font-semibold">Quick Actions</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create new content or manage existing ones
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </SidebarProvider>
   );
 };
 
