@@ -21,23 +21,29 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     try {
       console.log('Starting sign out process...');
+      
+      // First check if we have a session
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Current session:', session ? 'exists' : 'none');
+      
+      // Even if there's no session, we'll try to sign out
       const { error } = await supabase.auth.signOut();
       
-      if (error) {
+      if (error && error.message !== 'AuthSessionMissingError') {
         console.error('Supabase signOut error:', error);
         toast.error('Failed to sign out');
         return;
       }
 
-      console.log('Sign out successful, redirecting to login...');
-      // We need to wait a bit for the session to be cleared
-      setTimeout(() => {
-        navigate('/auth/login', { replace: true });
-        toast.success('Signed out successfully');
-      }, 100);
+      console.log('Sign out successful or session already cleared');
+      // Navigate immediately and show success message
+      navigate('/auth/login', { replace: true });
+      toast.success('Signed out successfully');
 
     } catch (error) {
       console.error('Unexpected error during sign out:', error);
+      // If we get any error, we'll still try to redirect to login
+      navigate('/auth/login', { replace: true });
       toast.error('An unexpected error occurred');
     }
   };
