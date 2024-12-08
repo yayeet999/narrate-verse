@@ -22,6 +22,14 @@ interface UserCredits {
 
 const fetchUserCredits = async () => {
   console.log('Fetching user credits...');
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  if (!session?.user?.id) {
+    console.error('No session found when fetching credits');
+    throw new Error('No session found');
+  }
+
+  console.log('Fetching credits for user:', session.user.id);
   const { data, error } = await supabase
     .from('user_credits')
     .select(`
@@ -30,10 +38,21 @@ const fetchUserCredits = async () => {
         name
       )
     `)
+    .eq('user_id', session.user.id)
     .single();
 
   if (error) {
     console.error('Error fetching user credits:', error);
+    if (error.code === 'PGRST116') {
+      // No credits record found, return default values
+      console.log('No credits record found, using defaults');
+      return {
+        credits_remaining: 0,
+        subscription_tiers: {
+          name: 'Free'
+        }
+      } as UserCredits;
+    }
     throw error;
   }
 
