@@ -30,7 +30,9 @@ const fetchUserCredits = async () => {
   }
 
   console.log('Fetching credits for user:', session.user.id);
-  const { data, error } = await supabase
+  
+  // First try to get existing credits
+  const { data: existingCredits, error: fetchError } = await supabase
     .from('user_credits')
     .select(`
       credits_remaining,
@@ -41,23 +43,59 @@ const fetchUserCredits = async () => {
     .eq('user_id', session.user.id)
     .single();
 
-  if (error) {
-    console.error('Error fetching user credits:', error);
-    if (error.code === 'PGRST116') {
-      // No credits record found, return default values
-      console.log('No credits record found, using defaults');
-      return {
-        credits_remaining: 0,
-        subscription_tiers: {
-          name: 'Free'
-        }
-      } as UserCredits;
-    }
-    throw error;
+  if (existingCredits) {
+    console.log('Found existing credits:', existingCredits);
+    return existingCredits as UserCredits;
   }
 
-  console.log('User credits fetched:', data);
-  return data as UserCredits;
+  // If no credits exist, let's create them
+  console.log('No credits found, creating new credits record...');
+  
+  // First get the free tier ID
+  const { data: freeTier } = await supabase
+    .from('subscription_tiers')
+    .select('id')
+    .eq('name', 'Free')
+    .single();
+
+  if (!freeTier?.id) {
+    console.error('No free tier found');
+    return {
+      credits_remaining: 0,
+      subscription_tiers: {
+        name: 'Free'
+      }
+    } as UserCredits;
+  }
+
+  // Create new user credits
+  const { data: newCredits, error: insertError } = await supabase
+    .from('user_credits')
+    .insert({
+      user_id: session.user.id,
+      credits_remaining: 10,
+      tier_id: freeTier.id
+    })
+    .select(`
+      credits_remaining,
+      subscription_tiers (
+        name
+      )
+    `)
+    .single();
+
+  if (insertError) {
+    console.error('Error creating user credits:', insertError);
+    return {
+      credits_remaining: 0,
+      subscription_tiers: {
+        name: 'Free'
+      }
+    } as UserCredits;
+  }
+
+  console.log('Created new credits:', newCredits);
+  return newCredits as UserCredits;
 };
 
 const DashboardOverview = () => {
