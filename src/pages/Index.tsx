@@ -1,8 +1,27 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { BookOpen, PenLine, Sparkles, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 const Index = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const features = [
     {
       title: "Instant Blog Posts",
@@ -59,25 +78,27 @@ const Index = () => {
             From quick blog posts to elaborate novels, bring your stories to life.
           </p>
 
-          <div className="mt-10 flex justify-center gap-x-6">
-            <Link to="/auth/signup">
-              <Button 
-                size="lg"
-                className="bg-primary text-white hover:bg-primary/90 h-12 px-8 animate-fade-in hover:animate-scale-up"
-              >
-                Try for Free
-              </Button>
-            </Link>
-            <Link to="/pricing">
-              <Button 
-                variant="outline"
-                size="lg"
-                className="border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 h-12 px-8 animate-fade-in hover:animate-scale-up"
-              >
-                View Pricing
-              </Button>
-            </Link>
-          </div>
+          {!isAuthenticated && (
+            <div className="mt-10 flex justify-center gap-x-6">
+              <Link to="/auth/signup">
+                <Button 
+                  size="lg"
+                  className="bg-primary text-white hover:bg-primary/90 h-12 px-8 animate-fade-in hover:animate-scale-up"
+                >
+                  Try for Free
+                </Button>
+              </Link>
+              <Link to="/pricing">
+                <Button 
+                  variant="outline"
+                  size="lg"
+                  className="border-slate-200 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 h-12 px-8 animate-fade-in hover:animate-scale-up"
+                >
+                  View Pricing
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
