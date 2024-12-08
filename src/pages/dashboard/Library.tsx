@@ -41,8 +41,7 @@ const Library = () => {
           <TabsTrigger value="blog">Blogs</TabsTrigger>
           <TabsTrigger value="story">Stories</TabsTrigger>
           <TabsTrigger value="novel">Novels</TabsTrigger>
-          <TabsTrigger value="interactive_story" className="hidden md:block">Interactive Stories</TabsTrigger>
-          <TabsTrigger value="interactive_story" className="md:hidden">Interactive</TabsTrigger>
+          <TabsTrigger value="interactive_story">Interactive</TabsTrigger>
         </TabsList>
 
         {["blog", "story", "novel", "interactive_story"].map((type) => (
