@@ -10,8 +10,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const handleLogoClick = (e: React.MouseEvent) => {
     console.log('Logo clicked, current location:', location.pathname);
     e.preventDefault();
+    e.stopPropagation(); // Prevent any event bubbling
     console.log('Navigating to home page...');
-    navigate('/', { replace: true });
+    if (location.pathname !== '/') {
+      navigate('/', { replace: true });
+    }
   };
 
   return (
@@ -21,7 +24,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <div className="flex h-16 justify-between items-center">
             <button 
               onClick={handleLogoClick}
-              className="flex items-center space-x-2"
+              className="flex items-center space-x-2 cursor-pointer"
             >
               <span className="font-display text-2xl font-semibold text-slate-900 dark:text-white">
                 Narrately.ai
