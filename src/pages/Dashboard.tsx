@@ -10,18 +10,18 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, LogOut, Library, PenSquare, FolderOpen, Settings } from "lucide-react";
+import { Menu, LogOut, Library as LibraryIcon, PenSquare, FolderOpen, Settings as SettingsIcon } from "lucide-react";
 import Navbar from "@/components/navigation/Navbar";
-import Library from "./dashboard/Library";
-import Reader from "./dashboard/Reader";
-import Settings from "./dashboard/Settings";
+import LibraryPage from "./dashboard/Library";
+import ReaderPage from "./dashboard/Reader";
+import SettingsPage from "./dashboard/Settings";
 import { DashboardOverview } from "@/components/dashboard/DashboardOverview";
 
 // Define menu items in one place to maintain consistency
 const menuItems = [
   {
     title: "Library",
-    icon: Library,
+    icon: LibraryIcon,
     url: "/dashboard/library",
   },
   {
@@ -36,7 +36,7 @@ const menuItems = [
   },
   {
     title: "Settings",
-    icon: Settings,
+    icon: SettingsIcon,
     url: "/dashboard/settings",
   },
 ];
@@ -148,9 +148,9 @@ const Dashboard = () => {
           <main className="flex-1 overflow-y-auto">
             <Routes>
               <Route index element={<DashboardOverview />} />
-              <Route path="library" element={<Library />} />
-              <Route path="read/:id" element={<Reader />} />
-              <Route path="settings" element={<Settings />} />
+              <Route path="library" element={<LibraryPage />} />
+              <Route path="read/:id" element={<ReaderPage />} />
+              <Route path="settings" element={<SettingsPage />} />
             </Routes>
           </main>
         </div>
