@@ -3,6 +3,7 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthChangeEvent } from "@supabase/supabase-js";  // Import the correct type
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -20,9 +21,9 @@ const Signup = () => {
     checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session) => {
       console.log("Auth event:", event);
-      if (event === 'SIGNED_UP') {
+      if (event === 'SIGNED_UP') {  // This will now be type-safe
         setShowVerification(true);
       } else if (session) {
         navigate("/dashboard");
