@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { BLOG_LENGTHS } from '@/lib/constants';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export const ReviewStep = ({ 
   form, 
@@ -119,14 +120,16 @@ export const ReviewStep = ({
       </div>
 
       <div className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>Back</Button>
+        <Button variant="outline" onClick={onBack} disabled={isGenerating}>
+          Back
+        </Button>
         <Button 
           onClick={handleGenerateBlog} 
           disabled={isGenerating}
         >
           {isGenerating ? (
             <>
-              <div className="animate-spin mr-2">⚪</div>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Generating...
             </>
           ) : (
