@@ -1,6 +1,8 @@
-import { supabase } from "@/integrations/supabase/client";
+import { createClient } from '@supabase/supabase-js';
 import { StorySettings } from '@/types/story';
+import { Database } from '@/integrations/supabase/types';
 import { ProcessedVectorResults, VectorChunk } from './types';
+import { supabase } from '@/integrations/supabase/client';
 
 export class VectorSearchManager {
   private readonly MATCH_THRESHOLD = 0.7;
@@ -8,7 +10,7 @@ export class VectorSearchManager {
 
   async executeSearch(settings: StorySettings): Promise<ProcessedVectorResults> {
     try {
-      console.log('Starting vector search for settings:', settings);
+      console.log('Starting vector search with settings:', settings);
       
       const searchPromises = [
         this.searchWritingStyle(settings),
@@ -36,7 +38,7 @@ export class VectorSearchManager {
     }
   }
 
-  private async generateEmbedding(text: string): Promise<number[]> {
+  private async generateEmbedding(text: string): Promise<string> {
     console.log('Generating embedding for text:', text);
     
     const response = await fetch('https://api.openai.com/v1/embeddings', {
@@ -57,11 +59,12 @@ export class VectorSearchManager {
     }
 
     const result = await response.json();
-    return result.data[0].embedding;
+    // Convert the embedding array to a vector string format that Postgres expects
+    return `[${result.data[0].embedding.join(',')}]`;
   }
 
   private async searchWithEmbedding(
-    embedding: number[],
+    embedding: string,
     category: string
   ): Promise<VectorChunk[]> {
     console.log(`Searching for ${category} with embedding`);
@@ -81,7 +84,7 @@ export class VectorSearchManager {
       content: chunk.content,
       category: chunk.category,
       relevanceScore: chunk.similarity,
-      metadata: JSON.parse(chunk.metadata || '{}')
+      metadata: chunk.metadata || {}
     }));
   }
 
