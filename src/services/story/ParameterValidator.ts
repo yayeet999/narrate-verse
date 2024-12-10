@@ -1,7 +1,8 @@
 import { StorySettings } from '@/types/story';
+import { ValidationResult } from './types';
 
 export class ParameterValidator {
-  async validate(settings: StorySettings): Promise<{ success: boolean; error?: string }> {
+  async validate(settings: StorySettings): Promise<ValidationResult> {
     console.log('Validating story settings:', settings);
     
     try {

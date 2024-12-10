@@ -78,10 +78,11 @@ export class VectorSearchManager {
     }
 
     return data.map(chunk => ({
+      id: chunk.id,
       content: chunk.content,
-      category: chunk.category,
+      category: category,
       relevanceScore: chunk.similarity,
-      metadata: chunk.metadata || {}
+      metadata: {}
     }));
   }
 
