@@ -1,5 +1,5 @@
 import { LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -17,6 +17,14 @@ interface MobileMenuProps {
 
 export const MobileMenu = ({ onSignOut, isOpen, setIsOpen }: MobileMenuProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActiveRoute = (url: string) => {
+    if (url === '/dashboard' && location.pathname === '/dashboard') {
+      return true;
+    }
+    return location.pathname.startsWith(url) && url !== '/dashboard';
+  };
 
   const handleNavigation = (url: string) => {
     setIsOpen(false);
@@ -39,7 +47,7 @@ export const MobileMenu = ({ onSignOut, isOpen, setIsOpen }: MobileMenuProps) =>
           {menuItems.map((item) => (
             <Button
               key={item.title}
-              variant="ghost"
+              variant={isActiveRoute(item.url) ? "default" : "ghost"}
               className="w-full justify-start gap-2"
               onClick={() => handleNavigation(item.url)}
             >

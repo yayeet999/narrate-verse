@@ -18,6 +18,13 @@ interface DashboardSidebarProps {
 export function DashboardSidebar({ isOpen, onToggle }: DashboardSidebarProps) {
   const location = useLocation();
 
+  const isActiveRoute = (url: string) => {
+    if (url === '/dashboard' && location.pathname === '/dashboard') {
+      return true;
+    }
+    return location.pathname.startsWith(url) && url !== '/dashboard';
+  };
+
   return (
     <Sidebar className="border-r border-slate-200 dark:border-slate-800">
       <SidebarContent className="md:pt-16">
@@ -29,8 +36,11 @@ export function DashboardSidebar({ isOpen, onToggle }: DashboardSidebarProps) {
                   <Link to={item.url} style={{ width: '100%' }}>
                     <SidebarMenuButton
                       tooltip={item.title}
-                      className="w-full justify-start gap-2"
-                      isActive={location.pathname === item.url}
+                      className={`w-full justify-start gap-2 ${
+                        isActiveRoute(item.url)
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          : ''
+                      }`}
                     >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
