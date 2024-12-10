@@ -1,38 +1,47 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 import axios from 'npm:axios'
 
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions'
 
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // Parse and validate request body
     const { blogParams } = await req.json()
-    
-    // Get API key from Supabase secrets
+    console.log('Received blog parameters:', JSON.stringify(blogParams, null, 2))
+
+    // Validate API key
     const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY')
     if (!PERPLEXITY_API_KEY) {
-      throw new Error('Perplexity API key not configured')
+      console.error('Perplexity API key not found in environment')
+      throw new Error('API key configuration missing')
     }
 
-    // Helper functions for content style
+    // Helper functions
     const getTechnicalLevel = (level: number) => {
       const levels = ['very casual', 'casual', 'balanced', 'technical', 'very technical']
-      return levels[level - 1]
+      return levels[Math.min(Math.max(0, level - 1), levels.length - 1)]
     }
 
     const getTone = (level: number) => {
       const tones = ['very conversational', 'conversational', 'balanced', 'professional', 'very professional']
-      return tones[level - 1]
+      return tones[Math.min(Math.max(0, level - 1), tones.length - 1)]
     }
 
     const getDetailLevel = (level: number) => {
       const details = ['brief overview', 'general overview', 'moderate detail', 'detailed', 'very detailed']
-      return details[level - 1]
+      return details[Math.min(Math.max(0, level - 1), details.length - 1)]
+    }
+
+    // Validate blog parameters
+    if (!blogParams?.type || !blogParams?.length || !blogParams?.targetAudience) {
+      console.error('Missing required blog parameters:', blogParams)
+      throw new Error('Missing required blog parameters')
     }
 
     // Construct prompts
@@ -50,7 +59,13 @@ ${blogParams.options.seoOptimization ? '- Optimize content for search engines\n'
 
 First, thoroughly research the topic and cite your sources. Then write the blog post based on your research.`
 
-    const userPrompt = `Research and write a blog post about: ${blogParams.customInstructions}`
+    const userPrompt = `Research and write a blog post about: ${blogParams.customInstructions || 'Write an informative blog post.'}`
+
+    console.log('Making API request with prompts:', {
+      systemPrompt,
+      userPrompt,
+      model: "llama-3.1-sonar-small-128k-online"
+    })
 
     // Make API request
     const response = await axios.post(
@@ -76,6 +91,8 @@ First, thoroughly research the topic and cite your sources. Then write the blog 
       }
     )
 
+    console.log('API response received successfully')
+
     return new Response(
       JSON.stringify({ content: response.data.choices[0].message.content }),
       {
@@ -85,10 +102,16 @@ First, thoroughly research the topic and cite your sources. Then write the blog 
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Detailed error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    })
+
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An unexpected error occurred' 
+        error: error.message,
+        details: error.response?.data || 'No additional details available'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
