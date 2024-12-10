@@ -20,7 +20,7 @@ const ReferenceChunks = () => {
       const { data, error } = await supabase
         .from('story_reference_chunks')
         .select('*')
-        .order('chunk_number');
+        .order('chunk_number', { ascending: true });  // Added explicit ordering
         
       if (error) {
         console.error('Error fetching chunks:', error);
