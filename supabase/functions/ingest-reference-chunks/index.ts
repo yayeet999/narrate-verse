@@ -30,6 +30,7 @@ serve(async (req) => {
     console.log('Received chunks:', chunks)
 
     if (!Array.isArray(chunks)) {
+      console.error('Invalid chunks format received');
       throw new Error('Invalid chunks format')
     }
 
