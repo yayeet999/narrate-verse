@@ -96,11 +96,13 @@ const StoryPost = () => {
       }
 
       const values = form.getValues();
-      console.log('Generating story with values:', values);
+      console.log('Starting story generation with values:', values);
       
       const { data, error } = await supabase.functions.invoke('generate-story', {
         body: { storyParams: values }
       });
+
+      console.log('Story generation API response:', { data, error });
 
       if (error) {
         throw new Error(error.message || 'Failed to generate story content');
@@ -110,11 +112,17 @@ const StoryPost = () => {
         throw new Error('No content received from the generation service');
       }
 
-      console.log('Generated content:', data.content);
+      const wordCount = data.content.split(/\s+/).length;
+      console.log('Generated content statistics:', {
+        wordCount,
+        targetLength: values.basicSettings.length,
+        contentPreview: data.content.substring(0, 100) + '...'
+      });
+
       setGeneratedContent(data.content);
       setShowPreview(true);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error during story generation:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate story content');
     } finally {
       setIsGenerating(false);
