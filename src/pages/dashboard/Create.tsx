@@ -91,9 +91,10 @@ const CreateContent = () => {
       return;
     }
 
-    // Temporarily removed content limit check
     if (contentType === 'blog') {
       navigate('/dashboard/create/blog');
+    } else if (contentType === 'story') {
+      navigate('/dashboard/create/story');
     }
   };
 
