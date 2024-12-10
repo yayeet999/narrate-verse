@@ -1,13 +1,7 @@
-import { Instagram, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-
-  const socialLinks = [
-    { icon: <Twitter className="h-5 w-5" />, href: "#", label: "Twitter" },
-    { icon: <Instagram className="h-5 w-5" />, href: "#", label: "Instagram" },
-  ];
 
   return (
     <footer className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
@@ -44,27 +38,8 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Column 3: Social & Legal */}
+          {/* Column 3: Legal Links */}
           <div className="flex flex-col space-y-2">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-2">
-                Follow us
-              </h3>
-              <div className="flex space-x-4">
-                {socialLinks.map((link) => (
-                  <a
-                    key={link.label}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors"
-                    aria-label={link.label}
-                  >
-                    {link.icon}
-                  </a>
-                ))}
-              </div>
-            </div>
             <div className="flex flex-col space-y-1">
               <Link
                 to="/terms"
