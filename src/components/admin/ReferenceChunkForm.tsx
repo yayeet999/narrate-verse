@@ -23,13 +23,13 @@ export const ReferenceChunkForm = () => {
     setIsSubmitting(true);
     
     try {
-      console.log('Submitting chunk:', {
+      console.log('Attempting to submit chunk:', {
         content,
         category,
         chunkNumber: parseInt(chunkNumber)
       });
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('story_reference_chunks')
         .insert([
           {
@@ -39,17 +39,22 @@ export const ReferenceChunkForm = () => {
           }
         ]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
 
+      console.log('Successfully added chunk:', data);
       toast.success('Reference chunk added successfully');
+      
       // Clear form
       setContent('');
       setCategory('');
       setChunkNumber('');
       
-    } catch (error) {
-      console.error('Error adding chunk:', error);
-      toast.error('Failed to add reference chunk');
+    } catch (error: any) {
+      console.error('Detailed error:', error);
+      toast.error(error.message || 'Failed to add reference chunk');
     } finally {
       setIsSubmitting(false);
     }

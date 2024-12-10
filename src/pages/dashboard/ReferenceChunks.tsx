@@ -16,12 +16,18 @@ const ReferenceChunks = () => {
   const { data: chunks, isLoading } = useQuery({
     queryKey: ['referenceChunks'],
     queryFn: async () => {
+      console.log('Fetching reference chunks...');
       const { data, error } = await supabase
         .from('story_reference_chunks')
         .select('*')
         .order('chunk_number');
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching chunks:', error);
+        throw error;
+      }
+      
+      console.log('Fetched chunks:', data);
       return data;
     }
   });
