@@ -10,7 +10,7 @@ const contentTypes = [
   {
     id: "blog",
     title: "Blog Post",
-    description: "Generate expert SEO-optimized articles and blog posts",
+    description: "Generate SEO-optimized articles and blog posts",
     icon: Book,
     color: "bg-purple-100 dark:bg-purple-900/20",
     iconColor: "text-purple-500",
