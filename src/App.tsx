@@ -10,8 +10,8 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import Dashboard from "./pages/Dashboard";
 import PricingPage from "./pages/Pricing";
+import ReferenceChunks from "./pages/dashboard/ReferenceChunks";
 
-// Scroll restoration component
 function ScrollToTop() {
   const location = useLocation();
   
@@ -41,6 +41,7 @@ const App = () => (
               <Route path="/pricing" element={<PricingPage />} />
             </Route>
             <Route path="/dashboard/*" element={<Dashboard />} />
+            <Route path="/admin/reference-chunks" element={<ReferenceChunks />} />
           </Routes>
         </div>
       </BrowserRouter>
