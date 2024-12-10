@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, ChevronLeft, Loader } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { PreviewStep } from '@/components/blog/PreviewStep';
+import { Form } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
 import { 
   Breadcrumb,
   BreadcrumbItem,
@@ -20,7 +21,9 @@ import { CharacterCreationStep } from '@/components/story/CharacterCreationStep'
 import { ThematicElementsStep } from '@/components/story/ThematicElementsStep';
 import { CustomInstructionsStep } from '@/components/story/CustomInstructionsStep';
 import { ReviewSettingsStep } from '@/components/story/ReviewSettingsStep';
+import { StoryPreviewStep } from '@/components/story/StoryPreviewStep';
 import type { StorySettings } from '@/types/story';
+import { supabase } from '@/integrations/supabase/client';
 
 const initialSettings: StorySettings = {
   basicSettings: {
@@ -63,10 +66,13 @@ const initialSettings: StorySettings = {
 const StoryPost = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [storySettings, setStorySettings] = useState<StorySettings>(initialSettings);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+
+  const form = useForm<StorySettings>({
+    defaultValues: initialSettings
+  });
 
   const totalSteps = 7;
   const stepTitles = [
@@ -82,23 +88,59 @@ const StoryPost = () => {
   const handleGenerate = async () => {
     try {
       setIsGenerating(true);
-      // TODO: Implement actual story generation logic
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulated delay
-      const mockContent = "Your generated story will appear here...";
-      setGeneratedContent(mockContent);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        toast.error("You must be logged in to generate content");
+        return;
+      }
+
+      const values = form.getValues();
+      console.log('Generating story with values:', values);
+      
+      const { data, error } = await supabase.functions.invoke('generate-story', {
+        body: { storyParams: values }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to generate story content');
+      }
+
+      if (!data?.content) {
+        throw new Error('No content received from the generation service');
+      }
+
+      console.log('Generated content:', data.content);
+      setGeneratedContent(data.content);
       setShowPreview(true);
-      toast.success('Story generated successfully!');
     } catch (error) {
-      console.error('Error generating story:', error);
-      toast.error('Failed to generate story. Please try again.');
+      console.error('Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate story content');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (content: string) => {
     try {
-      // TODO: Implement save logic
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error("You must be logged in to save content");
+        return;
+      }
+
+      const { error } = await supabase
+        .from('content')
+        .insert({
+          user_id: session.user.id,
+          title: form.getValues().basicSettings.genre,
+          content: content,
+          type: 'story',
+          is_published: false
+        });
+
+      if (error) throw error;
+
       toast.success('Story saved successfully!');
       navigate('/dashboard/library');
     } catch (error) {
@@ -107,16 +149,11 @@ const StoryPost = () => {
     }
   };
 
-  const handleEdit = (content: string) => {
-    setGeneratedContent(content);
-  };
-
   const renderCurrentStep = () => {
     if (showPreview) {
       return (
-        <PreviewStep
+        <StoryPreviewStep
           content={generatedContent}
-          onEdit={handleEdit}
           onSave={handleSave}
           onBack={() => setShowPreview(false)}
           isLoading={isGenerating}
@@ -124,24 +161,25 @@ const StoryPost = () => {
       );
     }
 
-    switch(currentStep) {
-      case 1:
-        return <BasicSettingsStep settings={storySettings} updateSettings={setStorySettings} />;
-      case 2:
-        return <WorldBuildingStep settings={storySettings} updateSettings={setStorySettings} />;
-      case 3:
-        return <PacingStyleStep settings={storySettings} updateSettings={setStorySettings} />;
-      case 4:
-        return <CharacterCreationStep settings={storySettings} updateSettings={setStorySettings} />;
-      case 5:
-        return <ThematicElementsStep settings={storySettings} updateSettings={setStorySettings} />;
-      case 6:
-        return <CustomInstructionsStep settings={storySettings} updateSettings={setStorySettings} />;
-      case 7:
-        return <ReviewSettingsStep settings={storySettings} />;
-      default:
-        return null;
-    }
+    const StepComponent = {
+      1: BasicSettingsStep,
+      2: WorldBuildingStep,
+      3: PacingStyleStep,
+      4: CharacterCreationStep,
+      5: ThematicElementsStep,
+      6: CustomInstructionsStep,
+      7: ReviewSettingsStep,
+    }[currentStep];
+
+    if (!StepComponent) return null;
+
+    return (
+      <Form {...form}>
+        <form>
+          <StepComponent form={form} />
+        </form>
+      </Form>
+    );
   };
 
   return (
@@ -218,7 +256,7 @@ const StoryPost = () => {
               >
                 {isGenerating ? (
                   <>
-                    <Loader className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Generating...
                   </>
                 ) : (
