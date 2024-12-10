@@ -72,6 +72,74 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_tiers: {
+        Row: {
+          created_at: string
+          features: Json
+          id: string
+          max_content_count: number
+          name: string
+          type: Database["public"]["Enums"]["subscription_tier_type"]
+        }
+        Insert: {
+          created_at?: string
+          features?: Json
+          id?: string
+          max_content_count: number
+          name: string
+          type: Database["public"]["Enums"]["subscription_tier_type"]
+        }
+        Update: {
+          created_at?: string
+          features?: Json
+          id?: string
+          max_content_count?: number
+          name?: string
+          type?: Database["public"]["Enums"]["subscription_tier_type"]
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          is_active: boolean | null
+          starts_at: string
+          tier_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          starts_at?: string
+          tier_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          starts_at?: string
+          tier_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -81,6 +149,7 @@ export type Database = {
     }
     Enums: {
       content_type: "blog" | "story" | "novel" | "interactive_story"
+      subscription_tier_type: "free" | "paid"
     }
     CompositeTypes: {
       [_ in never]: never

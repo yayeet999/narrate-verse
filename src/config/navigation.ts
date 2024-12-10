@@ -14,7 +14,7 @@ export const menuItems = [
   {
     title: "New Content",
     icon: PenSquare,
-    url: "/dashboard/new",
+    url: "/dashboard/create",
   },
   {
     title: "Settings",

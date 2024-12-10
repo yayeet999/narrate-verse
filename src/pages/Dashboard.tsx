@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Library from "./dashboard/Library";
 import Reader from "./dashboard/Reader";
 import Settings from "./dashboard/Settings";
+import CreateContent from "./dashboard/Create";
 import DashboardOverview from "@/components/dashboard/DashboardOverview";
 import Footer from "@/components/navigation/Footer";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ const Dashboard = () => {
             <Routes>
               <Route index element={<DashboardOverview />} />
               <Route path="library" element={<Library />} />
+              <Route path="create" element={<CreateContent />} />
               <Route path="read/:id" element={<Reader />} />
               <Route path="settings" element={<Settings />} />
             </Routes>
