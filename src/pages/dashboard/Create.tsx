@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen, ScrollText, Book, Gamepad, PenTool } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -90,27 +91,7 @@ const CreateContent = () => {
       return;
     }
 
-    const { data: existingContent } = await supabase
-      .from('content')
-      .select('id')
-      .eq('user_id', userSubscription.user_id);
-
-    const contentCount = existingContent?.length || 0;
-    const maxContent = userSubscription.subscription_tiers.max_content_count;
-
-    if (maxContent !== -1 && contentCount >= maxContent) {
-      toast.error(
-        "You've reached your content limit. Please upgrade your subscription to create more content.",
-        {
-          action: {
-            label: "Upgrade",
-            onClick: () => navigate("/pricing"),
-          },
-        }
-      );
-      return;
-    }
-
+    // Temporarily removed content limit check
     if (contentType === 'blog') {
       navigate('/dashboard/create/blog');
     }
@@ -150,18 +131,6 @@ const CreateContent = () => {
             );
           })}
         </div>
-
-        {userSubscription?.subscription_tiers?.max_content_count !== -1 && (
-          <p className="text-sm text-muted-foreground text-center">
-            Free trial users can create up to {userSubscription?.subscription_tiers?.max_content_count} pieces of content.{' '}
-            <button
-              onClick={() => navigate('/pricing')}
-              className="text-primary hover:underline"
-            >
-              Upgrade for unlimited content
-            </button>
-          </p>
-        )}
       </div>
     </div>
   );
