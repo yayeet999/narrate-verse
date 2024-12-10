@@ -1,15 +1,32 @@
-import { ProcessedVectorResults, VectorChunk } from './types';
+import { ProcessedVectorResults, VectorChunk, StorySettings } from './types';
 import { supabase } from '@/integrations/supabase/client';
+import OpenAI from 'openai';
 
 export class VectorSearchManager {
-  async executeSearch(settings: any): Promise<ProcessedVectorResults> {
+  private openai: OpenAI;
+
+  constructor() {
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+
+  async generateEmbedding(text: string): Promise<number[]> {
+    const response = await this.openai.embeddings.create({
+      model: "text-embedding-ada-002",
+      input: text,
+    });
+    return response.data[0].embedding;
+  }
+
+  async executeSearch(settings: StorySettings): Promise<ProcessedVectorResults> {
     try {
-      // Create a dummy embedding for now - this should be replaced with actual embedding generation
-      const dummyEmbedding = Array(1536).fill(0);
+      const settingsString = JSON.stringify(settings);
+      const embedding = await this.generateEmbedding(settingsString);
       
       const { data: chunks, error } = await supabase
         .rpc('match_story_chunks', {
-          query_embedding: dummyEmbedding,
+          query_embedding: JSON.stringify(embedding),
           match_threshold: 0.7,
           match_count: 10
         });
@@ -24,12 +41,28 @@ export class VectorSearchManager {
     }
   }
 
+  async searchWithEmbedding(
+    embedding: number[], 
+    threshold: number = 0.5, 
+    limit: number = 5
+  ): Promise<VectorChunk[]> {
+    const { data: chunks, error } = await supabase.rpc('match_story_chunks', {
+      query_embedding: JSON.stringify(embedding),
+      match_threshold: threshold,
+      match_count: limit
+    });
+
+    if (error) throw error;
+
+    return this.processChunks(chunks);
+  }
+
   private processChunks(chunks: any[]): VectorChunk[] {
     return chunks.map(chunk => ({
       id: chunk.id,
       content: chunk.content,
       category: chunk.category || 'uncategorized',
-      relevanceScore: chunk.similarity,
+      relevanceScore: chunk.similarity || 0,
       metadata: chunk.metadata || {}
     }));
   }
