@@ -1,7 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { HfInference } from 'https://esm.sh/@huggingface/inference@2.3.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,18 +48,28 @@ serve(async (req) => {
       throw new Error('Chunk not found');
     }
 
-    // Initialize Hugging Face client
-    console.log('Initializing HF client...');
-    const hf = new HfInference(Deno.env.get('HUGGING_FACE_ACCESS_TOKEN'));
-
-    // Generate embedding using the all-MiniLM-L6-v2 model
-    console.log('Generating embedding...');
-    const embedding = await hf.featureExtraction({
-      model: 'sentence-transformers/all-MiniLM-L6-v2',
-      inputs: chunk.content,
+    // Generate embedding using OpenAI
+    console.log('Generating embedding with OpenAI...');
+    const openAIResponse = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        input: chunk.content,
+        model: "text-embedding-3-small"
+      }),
     });
 
-    console.log('Embedding generated successfully');
+    if (!openAIResponse.ok) {
+      const error = await openAIResponse.json();
+      console.error('OpenAI API error:', error);
+      throw new Error('Failed to generate embedding');
+    }
+
+    const embeddingData = await openAIResponse.json();
+    const embedding = embeddingData.data[0].embedding;
 
     // Update the chunk with the embedding
     console.log('Updating chunk with embedding...');
