@@ -1,12 +1,15 @@
 import React from 'react';
 import { StorySettings } from '@/types/story';
+import { UseFormReturn } from 'react-hook-form';
 
 interface ThematicElementsStepProps {
-  settings: StorySettings;
-  updateSettings: (settings: StorySettings) => void;
+  form: UseFormReturn<StorySettings>;
 }
 
-export function ThematicElementsStep({ settings, updateSettings }: ThematicElementsStepProps) {
+export function ThematicElementsStep({ form }: ThematicElementsStepProps) {
+  const { watch, setValue } = form;
+  const settings = watch();
+
   const coreThemes = [
     'Redemption', 'Love & Loss', 'Good vs Evil',
     'Coming of Age', 'Power & Corruption', 'Identity',
@@ -24,6 +27,13 @@ export function ThematicElementsStep({ settings, updateSettings }: ThematicEleme
     'Raging Tranquility', 'Surreal', 'Nostalgic',
     'Bleak', 'Majestic', 'Brooding'
   ];
+
+  const updateThematicElements = (field: keyof StorySettings['thematicElements'], value: any) => {
+    setValue('thematicElements', {
+      ...settings.thematicElements,
+      [field]: value
+    });
+  };
 
   return (
     <div className="space-y-8">
@@ -50,10 +60,7 @@ export function ThematicElementsStep({ settings, updateSettings }: ThematicEleme
                 } else {
                   return;
                 }
-                updateSettings({
-                  ...settings,
-                  thematicElements: { ...settings.thematicElements, coreThemes: newThemes }
-                });
+                updateThematicElements('coreThemes', newThemes);
               }}
             >
               {theme}
@@ -75,10 +82,7 @@ export function ThematicElementsStep({ settings, updateSettings }: ThematicEleme
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => updateSettings({
-                ...settings,
-                thematicElements: { ...settings.thematicElements, storyEnding: ending }
-              })}
+              onClick={() => updateThematicElements('storyEnding', ending)}
             >
               {ending}
             </button>
@@ -103,10 +107,7 @@ export function ThematicElementsStep({ settings, updateSettings }: ThematicEleme
                 const newMoods = settings.thematicElements.moodAndFeel.includes(mood)
                   ? settings.thematicElements.moodAndFeel.filter(m => m !== mood)
                   : [...settings.thematicElements.moodAndFeel, mood];
-                updateSettings({
-                  ...settings,
-                  thematicElements: { ...settings.thematicElements, moodAndFeel: newMoods }
-                });
+                updateThematicElements('moodAndFeel', newMoods);
               }}
             >
               {mood}

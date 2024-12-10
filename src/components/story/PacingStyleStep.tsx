@@ -1,12 +1,22 @@
 import React from 'react';
 import { StorySettings } from '@/types/story';
+import { UseFormReturn } from 'react-hook-form';
 
 interface PacingStyleStepProps {
-  settings: StorySettings;
-  updateSettings: (settings: StorySettings) => void;
+  form: UseFormReturn<StorySettings>;
 }
 
-export function PacingStyleStep({ settings, updateSettings }: PacingStyleStepProps) {
+export function PacingStyleStep({ form }: PacingStyleStepProps) {
+  const { watch, setValue } = form;
+  const settings = watch();
+
+  const updatePacingStyle = (field: keyof StorySettings['pacingStyle'], value: number) => {
+    setValue('pacingStyle', {
+      ...settings.pacingStyle,
+      [field]: value
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -17,11 +27,8 @@ export function PacingStyleStep({ settings, updateSettings }: PacingStyleStepPro
           type="range"
           min="1"
           max="5"
-          value={settings.pacingStyle.plotDevelopment}
-          onChange={(e) => updateSettings({
-            ...settings,
-            pacingStyle: { ...settings.pacingStyle, plotDevelopment: Number(e.target.value) }
-          })}
+          value={settings.pacingStyle?.plotDevelopment || 3}
+          onChange={(e) => updatePacingStyle('plotDevelopment', Number(e.target.value))}
           className="w-full"
         />
         <div className="flex justify-between text-xs text-gray-500">
@@ -38,17 +45,14 @@ export function PacingStyleStep({ settings, updateSettings }: PacingStyleStepPro
           type="range"
           min="1"
           max="5"
-          value={settings.pacingStyle.sceneDetail}
-          onChange={(e) => updateSettings({
-            ...settings,
-            pacingStyle: { ...settings.pacingStyle, sceneDetail: Number(e.target.value) }
-          })}
+          value={settings.pacingStyle?.sceneDetail || 3}
+          onChange={(e) => updatePacingStyle('sceneDetail', Number(e.target.value))}
           className="w-full"
         />
         <div className="flex justify-between text-xs text-gray-500">
-            <span>Minimalist & Sparse</span>
-            <span>Highly Descriptive</span>
-          </div>
+          <span>Minimalist & Sparse</span>
+          <span>Highly Descriptive</span>
+        </div>
       </div>
 
       <div>
@@ -59,11 +63,8 @@ export function PacingStyleStep({ settings, updateSettings }: PacingStyleStepPro
           type="range"
           min="1"
           max="5"
-          value={settings.pacingStyle.dialogNarrative}
-          onChange={(e) => updateSettings({
-            ...settings,
-            pacingStyle: { ...settings.pacingStyle, dialogNarrative: Number(e.target.value) }
-          })}
+          value={settings.pacingStyle?.dialogNarrative || 3}
+          onChange={(e) => updatePacingStyle('dialogNarrative', Number(e.target.value))}
           className="w-full"
         />
         <div className="flex justify-between text-xs text-gray-500">
@@ -80,11 +81,8 @@ export function PacingStyleStep({ settings, updateSettings }: PacingStyleStepPro
           type="range"
           min="1"
           max="5"
-          value={settings.pacingStyle.overallMood}
-          onChange={(e) => updateSettings({
-            ...settings,
-            pacingStyle: { ...settings.pacingStyle, overallMood: Number(e.target.value) }
-          })}
+          value={settings.pacingStyle?.overallMood || 3}
+          onChange={(e) => updatePacingStyle('overallMood', Number(e.target.value))}
           className="w-full"
         />
         <div className="flex justify-between text-xs text-gray-500">
@@ -101,11 +99,8 @@ export function PacingStyleStep({ settings, updateSettings }: PacingStyleStepPro
           type="range"
           min="1"
           max="5"
-          value={settings.pacingStyle.dramaticHumorous}
-          onChange={(e) => updateSettings({
-            ...settings,
-            pacingStyle: { ...settings.pacingStyle, dramaticHumorous: Number(e.target.value) }
-          })}
+          value={settings.pacingStyle?.dramaticHumorous || 3}
+          onChange={(e) => updatePacingStyle('dramaticHumorous', Number(e.target.value))}
           className="w-full"
         />
         <div className="flex justify-between text-xs text-gray-500">

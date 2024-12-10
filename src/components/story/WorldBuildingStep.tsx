@@ -1,12 +1,15 @@
 import React from 'react';
 import { StorySettings } from '@/types/story';
+import { UseFormReturn } from 'react-hook-form';
 
 interface WorldBuildingStepProps {
-  settings: StorySettings;
-  updateSettings: (settings: StorySettings) => void;
+  form: UseFormReturn<StorySettings>;
 }
 
-export function WorldBuildingStep({ settings, updateSettings }: WorldBuildingStepProps) {
+export function WorldBuildingStep({ form }: WorldBuildingStepProps) {
+  const { watch, setValue } = form;
+  const settings = watch();
+
   const worldTypes = [
     'Mythical', 'Futuristic', 'Dystopian', 'Utopian', 'Alternate Reality',
     'Post-apocalyptic', 'Steampunk', 'Cyberpunk', 'Space-faring', 'Virtual World',
@@ -27,6 +30,13 @@ export function WorldBuildingStep({ settings, updateSettings }: WorldBuildingSte
     'Chaotic', 'Orderly', 'Ethereal', 'Gritty', 'Nostalgic'
   ];
 
+  const updateWorldBuilding = (field: keyof StorySettings['worldBuilding'], value: any) => {
+    setValue('worldBuilding', {
+      ...settings.worldBuilding,
+      [field]: value
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -35,11 +45,8 @@ export function WorldBuildingStep({ settings, updateSettings }: WorldBuildingSte
         </label>
         <select 
           className="w-full p-2 border border-gray-300 rounded-md"
-          value={settings.worldBuilding.worldType}
-          onChange={(e) => updateSettings({
-            ...settings,
-            worldBuilding: { ...settings.worldBuilding, worldType: e.target.value }
-          })}
+          value={settings.worldBuilding?.worldType || ''}
+          onChange={(e) => updateWorldBuilding('worldType', e.target.value)}
         >
           <option value="">Select a world type</option>
           {worldTypes.map(type => (
@@ -54,11 +61,8 @@ export function WorldBuildingStep({ settings, updateSettings }: WorldBuildingSte
         </label>
         <select 
           className="w-full p-2 border border-gray-300 rounded-md"
-          value={settings.worldBuilding.timePeriod}
-          onChange={(e) => updateSettings({
-            ...settings,
-            worldBuilding: { ...settings.worldBuilding, timePeriod: e.target.value }
-          })}
+          value={settings.worldBuilding?.timePeriod || ''}
+          onChange={(e) => updateWorldBuilding('timePeriod', e.target.value)}
         >
           <option value="">Select a time period</option>
           {timePeriods.map(period => (
@@ -75,19 +79,17 @@ export function WorldBuildingStep({ settings, updateSettings }: WorldBuildingSte
           {worldViews.map(view => (
             <button
               key={view}
+              type="button"
               className={`p-2 border rounded-md text-sm transition-colors ${
-                settings.worldBuilding.worldView.includes(view)
+                settings.worldBuilding?.worldView.includes(view)
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
               onClick={() => {
-                const newWorldView = settings.worldBuilding.worldView.includes(view)
+                const newWorldView = settings.worldBuilding?.worldView.includes(view)
                   ? settings.worldBuilding.worldView.filter(v => v !== view)
-                  : [...settings.worldBuilding.worldView, view];
-                updateSettings({
-                  ...settings,
-                  worldBuilding: { ...settings.worldBuilding, worldView: newWorldView }
-                });
+                  : [...(settings.worldBuilding?.worldView || []), view];
+                updateWorldBuilding('worldView', newWorldView);
               }}
             >
               {view}
@@ -105,11 +107,8 @@ export function WorldBuildingStep({ settings, updateSettings }: WorldBuildingSte
             type="range"
             min="1"
             max="5"
-            value={settings.worldBuilding.settingDetail}
-            onChange={(e) => updateSettings({
-              ...settings,
-              worldBuilding: { ...settings.worldBuilding, settingDetail: Number(e.target.value) }
-            })}
+            value={settings.worldBuilding?.settingDetail || 3}
+            onChange={(e) => updateWorldBuilding('settingDetail', Number(e.target.value))}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-gray-500">
@@ -126,11 +125,8 @@ export function WorldBuildingStep({ settings, updateSettings }: WorldBuildingSte
             type="range"
             min="1"
             max="5"
-            value={settings.worldBuilding.socialCulturalElements}
-            onChange={(e) => updateSettings({
-              ...settings,
-              worldBuilding: { ...settings.worldBuilding, socialCulturalElements: Number(e.target.value) }
-            })}
+            value={settings.worldBuilding?.socialCulturalElements || 3}
+            onChange={(e) => updateWorldBuilding('socialCulturalElements', Number(e.target.value))}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-gray-500">

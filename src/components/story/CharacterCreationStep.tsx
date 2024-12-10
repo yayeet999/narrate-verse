@@ -1,12 +1,15 @@
 import React from 'react';
 import { StorySettings } from '@/types/story';
+import { UseFormReturn } from 'react-hook-form';
 
 interface CharacterCreationStepProps {
-  settings: StorySettings;
-  updateSettings: (settings: StorySettings) => void;
+  form: UseFormReturn<StorySettings>;
 }
 
-export function CharacterCreationStep({ settings, updateSettings }: CharacterCreationStepProps) {
+export function CharacterCreationStep({ form }: CharacterCreationStepProps) {
+  const { watch, setValue } = form;
+  const settings = watch();
+
   const ageRanges = [
     'Child (8-12)', 'Teen (13-17)', 'Young Adult (18-25)',
     'Adult (26-45)', 'Middle Aged (46-65)', 'Senior (65+)'
@@ -35,6 +38,13 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
     'Lawful Evil', 'Neutral Evil', 'Chaotic Evil'
   ];
 
+  const updateCharacterCreation = (field: keyof StorySettings['characterCreation'], value: any) => {
+    setValue('characterCreation', {
+      ...settings.characterCreation,
+      [field]: value
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -45,15 +55,13 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
           {ageRanges.map(age => (
             <button
               key={age}
+              type="button"
               className={`p-2 border rounded-md text-sm transition-colors ${
-                settings.characterCreation.ageRange === age
+                settings.characterCreation?.ageRange === age
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => updateSettings({
-                ...settings,
-                characterCreation: { ...settings.characterCreation, ageRange: age }
-              })}
+              onClick={() => updateCharacterCreation('ageRange', age)}
             >
               {age}
             </button>
@@ -70,14 +78,11 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
             <button
               key={role}
               className={`p-2 border rounded-md text-sm transition-colors ${
-                settings.characterCreation.characterRole === role
+                settings.characterCreation?.characterRole === role
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => updateSettings({
-                ...settings,
-                characterCreation: { ...settings.characterCreation, characterRole: role }
-              })}
+              onClick={() => updateCharacterCreation('characterRole', role)}
             >
               {role}
             </button>
@@ -94,7 +99,7 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
             <button
               key={trait}
               className={`p-2 border rounded-md text-sm transition-colors ${
-                settings.characterCreation.personalityTraits.includes(trait)
+                settings.characterCreation?.personalityTraits?.includes(trait)
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
@@ -108,10 +113,7 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
                 } else {
                   return;
                 }
-                updateSettings({
-                  ...settings,
-                  characterCreation: { ...settings.characterCreation, personalityTraits: newTraits }
-                });
+                updateCharacterCreation('personalityTraits', newTraits);
               }}
             >
               {trait}
@@ -129,14 +131,11 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
             <button
               key={drive}
               className={`p-2 border rounded-md text-sm transition-colors ${
-                settings.characterCreation.coreDrive === drive
+                settings.characterCreation?.coreDrive === drive
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => updateSettings({
-                ...settings,
-                characterCreation: { ...settings.characterCreation, coreDrive: drive }
-              })}
+              onClick={() => updateCharacterCreation('coreDrive', drive)}
             >
               {drive}
             </button>
@@ -153,14 +152,11 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
             <button
               key={alignment}
               className={`p-2 border rounded-md text-sm transition-colors ${
-                settings.characterCreation.moralAlignment === alignment
+                settings.characterCreation?.moralAlignment === alignment
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => updateSettings({
-                ...settings,
-                characterCreation: { ...settings.characterCreation, moralAlignment: alignment }
-              })}
+              onClick={() => updateCharacterCreation('moralAlignment', alignment)}
             >
               {alignment}
             </button>
@@ -177,11 +173,8 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
             type="range"
             min="1"
             max="5"
-            value={settings.characterCreation.confidence}
-            onChange={(e) => updateSettings({
-              ...settings,
-              characterCreation: { ...settings.characterCreation, confidence: Number(e.target.value) }
-            })}
+            value={settings.characterCreation?.confidence || 3}
+            onChange={(e) => updateCharacterCreation('confidence', Number(e.target.value))}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-gray-500">
@@ -198,11 +191,8 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
             type="range"
             min="1"
             max="5"
-            value={settings.characterCreation.decisionMaking}
-            onChange={(e) => updateSettings({
-              ...settings,
-              characterCreation: { ...settings.characterCreation, decisionMaking: Number(e.target.value) }
-            })}
+            value={settings.characterCreation?.decisionMaking || 3}
+            onChange={(e) => updateCharacterCreation('decisionMaking', Number(e.target.value))}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-gray-500">
@@ -219,11 +209,8 @@ export function CharacterCreationStep({ settings, updateSettings }: CharacterCre
             type="range"
             min="1"
             max="5"
-            value={settings.characterCreation.predictability}
-            onChange={(e) => updateSettings({
-              ...settings,
-              characterCreation: { ...settings.characterCreation, predictability: Number(e.target.value) }
-            })}
+            value={settings.characterCreation?.predictability || 3}
+            onChange={(e) => updateCharacterCreation('predictability', Number(e.target.value))}
             className="w-full"
           />
           <div className="flex justify-between text-xs text-gray-500">

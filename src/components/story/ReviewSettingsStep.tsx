@@ -1,11 +1,15 @@
 import React from 'react';
 import { StorySettings } from '@/types/story';
+import { UseFormReturn } from 'react-hook-form';
 
 interface ReviewSettingsStepProps {
-  settings: StorySettings;
+  form: UseFormReturn<StorySettings>;
 }
 
-export function ReviewSettingsStep({ settings }: ReviewSettingsStepProps) {
+export function ReviewSettingsStep({ form }: ReviewSettingsStepProps) {
+  const { watch } = form;
+  const settings = watch();
+
   const renderSection = (title: string, content: React.ReactNode) => (
     <div className="border-b border-gray-200 py-4">
       <h3 className="font-medium text-gray-900 mb-2">{title}</h3>

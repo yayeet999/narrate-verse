@@ -1,14 +1,17 @@
 import React from 'react';
 import { StorySettings } from '@/types/story';
+import { UseFormReturn } from 'react-hook-form';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 interface CustomInstructionsStepProps {
-  settings: StorySettings;
-  updateSettings: (settings: StorySettings) => void;
+  form: UseFormReturn<StorySettings>;
 }
 
-export function CustomInstructionsStep({ settings, updateSettings }: CustomInstructionsStepProps) {
+export function CustomInstructionsStep({ form }: CustomInstructionsStepProps) {
+  const { watch, setValue } = form;
+  const settings = watch();
+
   return (
     <div className="space-y-8">
       <div>
@@ -22,10 +25,7 @@ export function CustomInstructionsStep({ settings, updateSettings }: CustomInstr
           className="min-h-[200px]"
           placeholder="Enter any additional requirements, specific scenes, or special instructions..."
           value={settings.customInstructions}
-          onChange={(e) => updateSettings({
-            ...settings,
-            customInstructions: e.target.value
-          })}
+          onChange={(e) => setValue('customInstructions', e.target.value)}
         />
       </div>
     </div>
