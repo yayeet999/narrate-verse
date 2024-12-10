@@ -60,7 +60,7 @@ export class OutlineGenerator {
       throw new Error('Structural framework chapter count mismatch');
     }
 
-    return structure;
+    return Promise.resolve(structure);
   }
 
   async generateInitialOutline(): Promise<OutlineSection[]> {
@@ -182,7 +182,7 @@ export class OutlineGenerator {
         objectives: chapterData.objectives,
         technicalNotes: {
           targetWordCount: this.calculateTargetWordCount(structuralSection),
-          paceTarget: this.calculatePaceTarget(structuralSection, chapterNumber),
+          paceTarget: this.calculatePaceTarget(chapterNumber, this.targetChapterCount),
           emotionalArc: chapterData.emotionalArc,
           requiredElements: chapterData.requiredElements
         }
@@ -264,7 +264,7 @@ export class OutlineGenerator {
           pacing: sceneData.pacing,
           tone: sceneData.tone,
           style: this.settings.basicSettings.writingStyle,
-          wordCountTarget: this.calculateSceneWordCount(structuralSection, sceneNumber)
+          wordCountTarget: this.calculateSceneWordCount(this.settings.pacingStyle.plotDevelopment, sceneData)
         }
       };
     } catch (error) {

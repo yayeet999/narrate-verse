@@ -4,9 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 export class VectorSearchManager {
   async executeSearch(settings: any): Promise<ProcessedVectorResults> {
     try {
+      // Create a dummy embedding for now - this should be replaced with actual embedding generation
+      const dummyEmbedding = Array(1536).fill(0);
+      
       const { data: chunks, error } = await supabase
         .rpc('match_story_chunks', {
-          query_embedding: [], // This should be your actual embedding
+          query_embedding: dummyEmbedding,
           match_threshold: 0.7,
           match_count: 10
         });
