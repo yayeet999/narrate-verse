@@ -5,7 +5,17 @@ import { BLOG_LENGTHS } from '@/lib/constants';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export const ReviewStep = ({ form, onBack, isGenerating }: { form: any; onBack: () => void; isGenerating: boolean }) => {
+export const ReviewStep = ({ 
+  form, 
+  onBack, 
+  isGenerating,
+  onPreview 
+}: { 
+  form: any; 
+  onBack: () => void; 
+  isGenerating: boolean;
+  onPreview: (content: string) => void;
+}) => {
   const values = form.getValues();
   
   const handleGenerateBlog = async () => {
@@ -34,22 +44,7 @@ export const ReviewStep = ({ form, onBack, isGenerating }: { form: any; onBack: 
       }
 
       const { content } = await response.json();
-
-      // Save to Supabase
-      const { error: saveError } = await supabase
-        .from('content')
-        .insert([
-          {
-            title: `${values.type.replace(/_/g, ' ')} - Draft`,
-            content: content,
-            type: 'blog',
-            user_id: session.user.id,
-            is_published: false
-          }
-        ]);
-
-      if (saveError) throw saveError;
-      toast.success("Blog post generated and saved successfully!");
+      onPreview(content); // Instead of saving directly, we pass to preview
 
     } catch (error) {
       console.error('Error:', error);

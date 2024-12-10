@@ -12,6 +12,7 @@ import { AudienceStyleStep } from '@/components/blog/AudienceStyleStep';
 import { OptionsStep } from '@/components/blog/OptionsStep';
 import { CustomInstructionsStep } from '@/components/blog/CustomInstructionsStep';
 import { ReviewStep } from '@/components/blog/ReviewStep';
+import { PreviewStep } from '@/components/blog/PreviewStep';
 import { 
   Breadcrumb,
   BreadcrumbItem,
@@ -42,6 +43,10 @@ const STEPS: { [key in BlogFormStep]: { title: string; description: string } } =
   'review': {
     title: 'Review',
     description: 'Review your settings'
+  },
+  'preview': {
+    title: 'Preview & Edit',
+    description: 'Review and edit generated content'
   }
 };
 
@@ -49,6 +54,7 @@ const BlogPost = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<BlogFormStep>('type-length');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState('');
 
   const form = useForm<BlogParameters>({
     defaultValues: {
@@ -71,43 +77,41 @@ const BlogPost = () => {
     }
   });
 
-  const onSubmit = async (data: BlogParameters) => {
-    console.log('Submitting blog parameters:', data);
-    setIsGenerating(true);
-
+  const handleSaveContent = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session?.user) {
-        toast.error("You must be logged in to create content");
+        toast.error("You must be logged in to save content");
         return;
       }
 
-      const { data: content, error: contentError } = await supabase
+      const values = form.getValues();
+      const { error: saveError } = await supabase
         .from('content')
         .insert([
           {
-            title: `${data.type.replace(/_/g, ' ')} - Draft`,
-            content: JSON.stringify(data),
+            title: `${values.type.replace(/_/g, ' ')} - Draft`,
+            content: generatedContent,
             type: 'blog',
             user_id: session.user.id,
             is_published: false
           }
-        ])
-        .select()
-        .single();
+        ]);
 
-      if (contentError) throw contentError;
-
-      toast.success("Blog parameters saved successfully!");
+      if (saveError) throw saveError;
+      toast.success("Blog post saved successfully!");
       navigate('/dashboard/library');
       
     } catch (error) {
-      console.error('Error creating blog:', error);
-      toast.error("Failed to create blog post");
-    } finally {
-      setIsGenerating(false);
+      console.error('Error saving blog:', error);
+      toast.error("Failed to save blog post");
     }
+  };
+
+  const handlePreview = (content: string) => {
+    setGeneratedContent(content);
+    setCurrentStep('preview');
+    setIsGenerating(false);
   };
 
   const nextStep = () => {
@@ -182,22 +186,48 @@ const BlogPost = () => {
 
       <Card className="p-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
             <AnimatePresence mode="wait">
               {currentStep === 'type-length' && (
-                <TypeLengthStep form={form} onNext={nextStep} />
+                <TypeLengthStep form={form} onNext={() => setCurrentStep('audience-style')} />
               )}
               {currentStep === 'audience-style' && (
-                <AudienceStyleStep form={form} onBack={previousStep} onNext={nextStep} />
+                <AudienceStyleStep 
+                  form={form} 
+                  onBack={() => setCurrentStep('type-length')} 
+                  onNext={() => setCurrentStep('options')} 
+                />
               )}
               {currentStep === 'options' && (
-                <OptionsStep form={form} onBack={previousStep} onNext={nextStep} />
+                <OptionsStep 
+                  form={form} 
+                  onBack={() => setCurrentStep('audience-style')} 
+                  onNext={() => setCurrentStep('custom')} 
+                />
               )}
               {currentStep === 'custom' && (
-                <CustomInstructionsStep form={form} onBack={previousStep} onNext={nextStep} />
+                <CustomInstructionsStep 
+                  form={form} 
+                  onBack={() => setCurrentStep('options')} 
+                  onNext={() => setCurrentStep('review')} 
+                />
               )}
               {currentStep === 'review' && (
-                <ReviewStep form={form} onBack={previousStep} isGenerating={isGenerating} />
+                <ReviewStep 
+                  form={form} 
+                  onBack={() => setCurrentStep('custom')} 
+                  isGenerating={isGenerating}
+                  onPreview={handlePreview}
+                />
+              )}
+              {currentStep === 'preview' && (
+                <PreviewStep
+                  content={generatedContent}
+                  onEdit={setGeneratedContent}
+                  onSave={handleSaveContent}
+                  onBack={() => setCurrentStep('review')}
+                  isLoading={isGenerating}
+                />
               )}
             </AnimatePresence>
           </form>

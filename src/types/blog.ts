@@ -22,4 +22,5 @@ export type BlogFormStep =
   | 'audience-style'
   | 'options'
   | 'custom'
-  | 'review';
+  | 'review'
+  | 'preview';
