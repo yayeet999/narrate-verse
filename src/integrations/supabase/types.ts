@@ -72,6 +72,88 @@ export type Database = {
         }
         Relationships: []
       }
+      story_generation_data: {
+        Row: {
+          content: string | null
+          created_at: string
+          data_type: Database["public"]["Enums"]["generation_data_type"]
+          expires_at: string
+          id: string
+          metadata: Json | null
+          sequence_number: number | null
+          session_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          data_type: Database["public"]["Enums"]["generation_data_type"]
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          sequence_number?: number | null
+          session_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          data_type?: Database["public"]["Enums"]["generation_data_type"]
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          sequence_number?: number | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_generation_data_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "story_generation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_generation_sessions: {
+        Row: {
+          content_id: string | null
+          created_at: string
+          id: string
+          last_successful_chapter: number | null
+          parameters: Json
+          status: Database["public"]["Enums"]["story_generation_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string
+          id?: string
+          last_successful_chapter?: number | null
+          parameters: Json
+          status?: Database["public"]["Enums"]["story_generation_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string
+          id?: string
+          last_successful_chapter?: number | null
+          parameters?: Json
+          status?: Database["public"]["Enums"]["story_generation_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_generation_sessions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "content"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       story_reference_chunks: {
         Row: {
           category: string
@@ -185,6 +267,10 @@ export type Database = {
             }
             Returns: unknown
           }
+      cleanup_expired_generation_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       halfvec_avg: {
         Args: {
           "": number[]
@@ -359,6 +445,20 @@ export type Database = {
     }
     Enums: {
       content_type: "blog" | "story" | "novel" | "interactive_story"
+      generation_data_type:
+        | "vector_result"
+        | "story_bible"
+        | "chapter"
+        | "outline"
+      story_chunk_type: "writing_style" | "genre_guide" | "character_guide"
+      story_generation_status: "in_progress" | "completed" | "failed"
+      story_validation_status:
+        | "draft"
+        | "validated"
+        | "final"
+        | "initial"
+        | "refined_1"
+        | "refined_2"
       subscription_tier_type: "free" | "paid"
     }
     CompositeTypes: {
