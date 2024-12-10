@@ -26,25 +26,21 @@ export const ReviewStep = ({
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-blog`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ blogParams: values }),
-        }
-      );
+      // Call the Edge Function using supabase.functions.invoke
+      const { data, error } = await supabase.functions.invoke('generate-blog', {
+        body: { blogParams: values }
+      });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate blog content');
+      if (error) {
+        throw new Error(error.message || 'Failed to generate blog content');
       }
 
-      const { content } = await response.json();
-      onPreview(content); // Instead of saving directly, we pass to preview
+      if (!data?.content) {
+        throw new Error('No content received from the generation service');
+      }
+
+      console.log('Generated content:', data.content); // Debug log
+      onPreview(data.content);
 
     } catch (error) {
       console.error('Error:', error);
