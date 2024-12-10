@@ -19,3 +19,11 @@ verify_jwt = true
 [[functions]]
 name = "check-subscription"
 verify_jwt = true
+
+[[functions]]
+name = "generate-blog"
+verify_jwt = true
+
+[[functions]]
+name = "ingest-reference-chunks"
+verify_jwt = false
