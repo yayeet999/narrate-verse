@@ -23,7 +23,7 @@ export const AudienceStyleStep = ({ form, onBack, onNext }: { form: any; onBack:
           <FormItem>
             <FormLabel>Target Audience</FormLabel>
             <div className="grid grid-cols-2 gap-4">
-              {['beginner', 'intermediate', 'general'].map((audience) => (
+              {['beginner', 'intermediate', 'expert', 'general'].map((audience) => (
                 <Button
                   key={audience}
                   type="button"
