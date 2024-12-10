@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { ReferenceChunkForm } from '@/components/admin/ReferenceChunkForm';
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -13,14 +15,16 @@ import {
 } from "@/components/ui/table";
 
 const ReferenceChunks = () => {
-  const { data: chunks, isLoading } = useQuery({
+  const [isGenerating, setIsGenerating] = useState<string | null>(null);
+
+  const { data: chunks, isLoading, refetch } = useQuery({
     queryKey: ['referenceChunks'],
     queryFn: async () => {
       console.log('Fetching reference chunks...');
       const { data, error } = await supabase
         .from('story_reference_chunks')
         .select('*')
-        .order('chunk_number', { ascending: true });  // Added explicit ordering
+        .order('chunk_number', { ascending: true });
         
       if (error) {
         console.error('Error fetching chunks:', error);
@@ -31,6 +35,27 @@ const ReferenceChunks = () => {
       return data;
     }
   });
+
+  const generateEmbedding = async (chunkId: string) => {
+    try {
+      setIsGenerating(chunkId);
+      console.log('Generating embedding for chunk:', chunkId);
+      
+      const { error } = await supabase.functions.invoke('generate-embeddings', {
+        body: { chunkId }
+      });
+
+      if (error) throw error;
+      
+      toast.success('Successfully generated embedding');
+      refetch(); // Refresh the chunks list
+    } catch (error: any) {
+      console.error('Error generating embedding:', error);
+      toast.error(error.message || 'Failed to generate embedding');
+    } finally {
+      setIsGenerating(null);
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -60,6 +85,8 @@ const ReferenceChunks = () => {
                       <TableHead>Number</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Content Preview</TableHead>
+                      <TableHead>Embedding</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -69,6 +96,25 @@ const ReferenceChunks = () => {
                         <TableCell>{chunk.category}</TableCell>
                         <TableCell className="max-w-[300px] truncate">
                           {chunk.content}
+                        </TableCell>
+                        <TableCell>
+                          {chunk.embedding ? (
+                            <span className="text-green-600">Generated</span>
+                          ) : (
+                            <span className="text-yellow-600">Missing</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {!chunk.embedding && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => generateEmbedding(chunk.id)}
+                              disabled={isGenerating === chunk.id}
+                            >
+                              {isGenerating === chunk.id ? 'Generating...' : 'Generate Embedding'}
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
