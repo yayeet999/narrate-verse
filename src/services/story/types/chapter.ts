@@ -1,3 +1,5 @@
+import { OutlineSection } from './outline';
+
 export interface ChapterSummary {
   chapterNumber: number;
   keyEvents: string[];

@@ -2,7 +2,11 @@ import { VectorChunk } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
 export class VectorSearchManager {
-  async searchWithEmbedding(embedding: number[], threshold: number = 0.5, limit: number = 5): Promise<VectorChunk[]> {
+  async searchWithEmbedding(
+    embedding: number[], 
+    threshold: number = 0.5, 
+    limit: number = 5
+  ): Promise<VectorChunk[]> {
     const { data: chunks, error } = await supabase.rpc('match_story_chunks', {
       query_embedding: embedding,
       match_threshold: threshold,

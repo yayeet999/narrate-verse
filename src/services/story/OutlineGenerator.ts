@@ -73,7 +73,13 @@ export class OutlineGenerator {
     return Math.floor((range.min + range.max) / 2);
   }
 
-  private async createStructuralFramework() {
+  private async createStructuralFramework(): Promise<{
+    exposition: number;
+    risingAction: number;
+    climax: number;
+    fallingAction: number;
+    resolution: number;
+  }> {
     const structure = {
       exposition: this.calculateExpositionChapters(),
       risingAction: this.calculateRisingActionChapters(),
