@@ -46,6 +46,7 @@ serve(async (req) => {
       .select()
 
     if (error) {
+      console.error('Database error:', error)
       throw error
     }
 
@@ -62,7 +63,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error processing request:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
