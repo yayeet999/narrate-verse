@@ -1,47 +1,18 @@
 import { StorySettings } from '@/types/story';
 import { StoryBible, ValidationResult } from './types';
+import { OutlineSection, SceneOutline } from './types/outline';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-interface SceneOutline {
-  id: string;
-  summary: string;
-  characters: string[];
-  location: string;
-  conflict: string;
-  objectives: string[];
-  technicalNotes: {
-    pacing: string;
-    tone: string;
-    style: string;
-    wordCountTarget: number;
-  };
-}
-
-interface OutlineSection {
-  chapterNumber: number;
-  title: string;
-  scenes: SceneOutline[];
-  purpose: string;
-  characters: string[];
-  objectives: string[];
-  technicalNotes: {
-    targetWordCount: number;
-    paceTarget: number;
-    emotionalArc: string;
-    requiredElements: string[];
-  };
-}
-
 export class OutlineGenerator {
   private storyBible: StoryBible;
   private settings: StorySettings;
   private targetChapterCount: number;
   private retryAttempts = 3;
-  private retryDelay = 1000; // milliseconds
+  private retryDelay = 1000;
   
   constructor(storyBible: StoryBible, settings: StorySettings) {
     this.storyBible = storyBible;
@@ -51,13 +22,9 @@ export class OutlineGenerator {
 
   async generateInitialOutline(): Promise<OutlineSection[]> {
     try {
-      // Create structural framework
       const structure = await this.createStructuralFramework();
-
-      // Generate chapter outlines
       const chapters = await this.generateChapterOutlines(structure);
-
-      // Validate initial outline
+      
       const validationResult = await this.validateOutline(chapters);
       if (!validationResult.success) {
         throw new Error(`Outline validation failed: ${validationResult.error}`);
@@ -75,18 +42,15 @@ export class OutlineGenerator {
       let refinedOutline = [...outline];
 
       if (pass === 'first') {
-        // First pass focuses on structure and pacing
         refinedOutline = await this.improveStructureAndPacing(refinedOutline);
         refinedOutline = await this.enhanceCharacterArcs(refinedOutline);
         refinedOutline = await this.balanceSceneDistribution(refinedOutline);
       } else {
-        // Second pass focuses on details and consistency
         refinedOutline = await this.enhanceSceneDetails(refinedOutline);
         refinedOutline = await this.improveThematicElements(refinedOutline);
         refinedOutline = await this.finalizeTransitions(refinedOutline);
       }
 
-      // Validate refined outline
       const validationResult = await this.validateOutline(refinedOutline);
       if (!validationResult.success) {
         throw new Error(`Outline refinement validation failed: ${validationResult.error}`);
@@ -110,7 +74,6 @@ export class OutlineGenerator {
   }
 
   private async createStructuralFramework() {
-    // Calculate chapter distribution based on story structure
     const structure = {
       exposition: this.calculateExpositionChapters(),
       risingAction: this.calculateRisingActionChapters(),
@@ -119,7 +82,6 @@ export class OutlineGenerator {
       resolution: this.calculateResolutionChapters()
     };
 
-    // Validate structure adds up to target chapter count
     const total = Object.values(structure).reduce((sum, count) => sum + count, 0);
     if (total !== this.targetChapterCount) {
       throw new Error('Structural framework chapter count mismatch');
@@ -162,7 +124,6 @@ export class OutlineGenerator {
     const chapters: OutlineSection[] = [];
     let chapterNumber = 1;
 
-    // Generate chapters for each structural section
     for (const [section, count] of Object.entries(structure)) {
       for (let i = 0; i < count; i++) {
         const chapter = await this.retryOperation(
@@ -207,7 +168,6 @@ export class OutlineGenerator {
 
       const chapterData = JSON.parse(completion.choices[0].message.content);
 
-      // Generate scenes for the chapter
       const scenes = await this.generateScenes(
         structuralSection,
         chapterNumber,
@@ -332,17 +292,14 @@ export class OutlineGenerator {
   private async improveStructureAndPacing(outline: OutlineSection[]): Promise<OutlineSection[]> {
     const refined = [...outline];
 
-    // Analyze and adjust pacing
     for (let i = 0; i < refined.length; i++) {
       refined[i] = await this.adjustChapterPacing(refined[i], i, refined.length);
     }
 
-    // Balance scene lengths
     refined.forEach(chapter => {
       chapter.scenes = this.balanceSceneLengths(chapter.scenes);
     });
 
-    // Distribute story beats
     this.distributeStoryBeats(refined);
 
     return refined;
@@ -459,51 +416,6 @@ export class OutlineGenerator {
       return refined;
   }
 
-  private async balanceSceneDistribution(outline: OutlineSection[]): Promise<OutlineSection[]> {
-    const refined = [...outline];
-    const distribution = this.analyzeSceneDistribution(refined);
-
-    refined.forEach(chapter => {
-      chapter.scenes = this.redistributeScenes(chapter.scenes, distribution);
-    });
-
-    return refined;
-  }
-
-  private analyzeSceneDistribution(outline: OutlineSection[]): Map<string, number> {
-    const distribution = new Map<string, number>();
-
-    outline.forEach(chapter => {
-      chapter.scenes.forEach(scene => {
-        scene.characters.forEach(char => {
-          distribution.set(char, (distribution.get(char) || 0) + 1);
-        });
-      });
-    });
-
-    return distribution;
-  }
-
-  private redistributeScenes(
-    scenes: SceneOutline[],
-    distribution: Map<string, number>
-  ): SceneOutline[] {
-    const averageAppearances = Array.from(distribution.values())
-      .reduce((sum, count) => sum + count, 0) / distribution.size;
-
-    return scenes.map(scene => {
-      const underrepresentedCharacters = Array.from(distribution.entries())
-        .filter(([_, count]) => count < averageAppearances * 0.7)
-        .map(([char]) => char);
-
-      if (underrepresentedCharacters.length > 0 && Math.random() > 0.7) {
-        scene.characters.push(underrepresentedCharacters[0]);
-      }
-
-      return scene;
-    });
-  }
-
   private async enhanceSceneDetails(outline: OutlineSection[]): Promise<OutlineSection[]> {
     const refined = [...outline];
 
@@ -599,12 +511,10 @@ export class OutlineGenerator {
   private async finalizeTransitions(outline: OutlineSection[]): Promise<OutlineSection[]> {
     const refined = [...outline];
 
-    // Enhance transitions between chapters
     for (let i = 1; i < refined.length; i++) {
       await this.enhanceChapterTransition(refined[i - 1], refined[i]);
     }
 
-    // Enhance scene transitions within chapters
     for (const chapter of refined) {
       chapter.scenes = await this.enhanceSceneTransitions(chapter.scenes);
     }
@@ -642,7 +552,6 @@ export class OutlineGenerator {
 
     const transitionElements = JSON.parse(completion.choices[0].message.content);
     
-    // Apply transition elements
     const lastScene = previousChapter.scenes[previousChapter.scenes.length - 1];
     const firstScene = nextChapter.scenes[0];
 
@@ -684,7 +593,6 @@ export class OutlineGenerator {
 
   private async validateOutline(outline: OutlineSection[]): Promise<ValidationResult> {
     try {
-      // Validate structural integrity
       if (!this.validateStructure(outline)) {
         return {
           success: false,
@@ -692,7 +600,6 @@ export class OutlineGenerator {
         };
       }
 
-      // Validate character arcs
       if (!this.validateCharacterArcs(outline)) {
         return {
           success: false,
@@ -700,7 +607,6 @@ export class OutlineGenerator {
         };
       }
 
-      // Validate plot progression
       if (!this.validatePlotProgression(outline)) {
         return {
           success: false,
@@ -708,7 +614,6 @@ export class OutlineGenerator {
         };
       }
 
-      // Validate thematic consistency
       if (!this.validateThematicConsistency(outline)) {
         return {
           success: false,
@@ -790,7 +695,6 @@ export class OutlineGenerator {
   private mapCharacterArcs(): Map<string, string[]> {
     const arcs = new Map<string, string[]>();
     
-    // Map main character arc
     const mainChar = this.storyBible.characters.mainCharacter;
     arcs.set('protagonist', [
       mainChar.arc.startingPoint,
@@ -798,7 +702,6 @@ export class OutlineGenerator {
       mainChar.arc.endPoint
     ]);
 
-    // Map supporting character arcs
     this.storyBible.characters.supportingCharacters.forEach(char => {
       arcs.set(char.role, [char.arc]);
     });
@@ -865,10 +768,7 @@ export class OutlineGenerator {
   ): number {
     let count = baseCount;
     
-    // Adjust based on conflict complexity
     count *= (conflict.split(' ').length > 20) ? 1.2 : 0.8;
-    
-    // Adjust based on scene position
     count *= (sceneIndex === 0 || sceneIndex === -1) ? 1.1 : 1.0;
     
     return Math.floor(count);

@@ -1,31 +1,14 @@
 import { StoryBible } from './StoryBibleGenerator';
-import { OutlineSection } from './OutlineGenerator';
+import { OutlineSection } from './types/outline';
 import { StorySettings } from '@/types/story';
-import { ValidationResult } from './types';
+import { ChapterSummary, ChapterPair, ChapterPrompt } from './types/chapter';
+import { TextAnalyzer } from './utils/TextAnalyzer';
+import { ChapterValidator } from './utils/ChapterValidator';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
-
-interface ChapterSummary {
-  chapterNumber: number;
-  keyEvents: string[];
-  characterDevelopments: Map<string, string>;
-  plotProgress: string;
-  thematicDevelopments: string[];
-}
-
-interface ChapterPair {
-  firstChapter: {
-    content: string;
-    summary: ChapterSummary;
-  };
-  secondChapter: {
-    content: string;
-    summary: ChapterSummary;
-  } | null;
-}
 
 interface GenerationContext {
   storyBible: StoryBible;
@@ -35,43 +18,10 @@ interface GenerationContext {
   currentChapterIndex: number;
 }
 
-interface ChapterPrompt {
-  context: {
-    storyContext: {
-      genre: string;
-      worldType: string;
-      mood: number;
-    };
-    previousEvents: string[];
-    characterStates: Map<string, string>;
-    plotProgress: string;
-    thematicProgress: string[];
-  };
-  requirements: {
-    scenes: any[];
-    characters: string[];
-    plot: string[];
-    pacing: number;
-  };
-  style: {
-    tone: number;
-    writingStyle: string;
-    dialogueStyle: string;
-    descriptionStyle: string;
-  };
-  technical: {
-    wordCountTarget: number;
-    pacing: number;
-    dialogueRatio: number;
-    sceneTransitions: string[];
-  };
-  outline: OutlineSection;
-}
-
 export class ChapterGenerator {
   private context: GenerationContext;
   private retryAttempts = 3;
-  private retryDelay = 1000; // milliseconds
+  private retryDelay = 1000;
   private maxTokensPerRequest = 4000;
   
   constructor(
@@ -91,7 +41,6 @@ export class ChapterGenerator {
 
   async generateChapterPair(): Promise<ChapterPair> {
     try {
-      // Get current chapters from outline
       const firstChapterOutline = this.context.outline[this.context.currentChapterIndex];
       const secondChapterOutline = this.context.outline[this.context.currentChapterIndex + 1];
 
@@ -99,20 +48,17 @@ export class ChapterGenerator {
         throw new Error('No more chapters to generate');
       }
 
-      // Generate first chapter
       const firstChapterPrompt = await this.buildChapterPrompt(firstChapterOutline);
       const firstChapter = await this.retryOperation(
         () => this.generateChapter(firstChapterPrompt),
         'First chapter generation failed'
       );
 
-      await this.validateChapter(firstChapter, firstChapterOutline);
+      await ChapterValidator.validateChapter(firstChapter, firstChapterOutline);
       const firstChapterSummary = await this.generateChapterSummary(firstChapter, firstChapterOutline);
 
-      // Update context with first chapter
       this.context.previousSummaries.push(firstChapterSummary);
 
-      // Generate second chapter if available
       let secondChapter = null;
       let secondChapterSummary = null;
 
@@ -123,7 +69,7 @@ export class ChapterGenerator {
           'Second chapter generation failed'
         );
 
-        await this.validateChapter(secondChapter, secondChapterOutline);
+        await ChapterValidator.validateChapter(secondChapter, secondChapterOutline);
         secondChapterSummary = await this.generateChapterSummary(secondChapter, secondChapterOutline);
         this.context.previousSummaries.push(secondChapterSummary);
       }
@@ -137,12 +83,67 @@ export class ChapterGenerator {
         },
         secondChapter: secondChapter ? {
           content: secondChapter,
-          summary: secondChapterSummary!
+          summary: secondChapterSummary
         } : null
       };
 
     } catch (error) {
       throw new Error(`Chapter pair generation failed: ${error.message}`);
+    }
+  }
+
+  private async generateChapterSummary(
+    chapter: string,
+    outline: OutlineSection
+  ): Promise<ChapterSummary> {
+    const summaryPrompt = `
+      Analyze the following chapter and provide a summary including:
+      - Key events
+      - Character developments
+      - Plot progress
+      - Thematic developments
+
+      Chapter content:
+      ${chapter}
+
+      Chapter outline:
+      ${JSON.stringify(outline)}
+    `;
+
+    try {
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a literary analyst specializing in story summarization.'
+          },
+          {
+            role: 'user',
+            content: summaryPrompt
+          }
+        ],
+        temperature: 0.3
+      });
+
+      const analysis = JSON.parse(completion.choices[0].message.content);
+
+      return {
+        chapterNumber: outline.chapterNumber,
+        keyEvents: analysis.keyEvents,
+        characterDevelopments: new Map(Object.entries(analysis.characterDevelopments)),
+        plotProgress: analysis.plotProgress,
+        thematicDevelopments: analysis.thematicDevelopments
+      };
+    } catch (error) {
+      console.error('Failed to generate chapter summary:', error);
+      return {
+        chapterNumber: outline.chapterNumber,
+        keyEvents: [],
+        characterDevelopments: new Map(),
+        plotProgress: '',
+        thematicDevelopments: []
+      };
     }
   }
 
@@ -200,7 +201,7 @@ export class ChapterGenerator {
     return {
       wordCountTarget: this.calculateWordCountTarget(),
       pacing: this.context.settings.pacingStyle.plotDevelopment,
-      dialogueRatio: this.context.settings.pacingStyle.dialogNarrative,
+      dialogueRatio: this.context.settings.pacingStyle.dialogNarrative / 5,
       sceneTransitions: this.getTransitionGuidelines()
     };
   }
@@ -230,186 +231,6 @@ export class ChapterGenerator {
     }
   }
 
-  private async validateChapter(
-    chapter: string,
-    outline: OutlineSection
-  ): Promise<ValidationResult> {
-    const validations = [
-      this.validateContent(chapter, outline),
-      this.validateStyle(chapter),
-      this.validateContinuity(chapter),
-      this.validateTechnicalRequirements(chapter, outline)
-    ];
-
-    const results = await Promise.all(validations);
-    const failures = results.filter(result => !result.success);
-
-    if (failures.length > 0) {
-      throw new Error(`Chapter validation failed: ${failures.map(f => f.error).join(', ')}`);
-    }
-
-    return { success: true };
-  }
-
-  private async validateContent(
-    chapter: string,
-    outline: OutlineSection
-  ): Promise<ValidationResult> {
-    try {
-      // Check scene presence and requirements
-      for (const scene of outline.scenes) {
-        // Verify scene elements
-        if (!this.findSceneElements(chapter, scene)) {
-          return {
-            success: false,
-            error: `Missing required elements in scene: ${scene.id}`
-          };
-        }
-
-        // Verify character presence
-        for (const character of scene.characters) {
-          if (!this.findCharacterPresence(chapter, character, scene)) {
-            return {
-              success: false,
-              error: `Character ${character} missing from scene ${scene.id}`
-            };
-          }
-        }
-
-        // Verify objectives
-        for (const objective of scene.objectives) {
-          if (!this.findObjectiveCompletion(chapter, objective, scene)) {
-            return {
-              success: false,
-              error: `Objective not met in scene ${scene.id}: ${objective}`
-            };
-          }
-        }
-      }
-
-      // Verify overall chapter objectives
-      for (const objective of outline.objectives) {
-        if (!this.findChapterObjective(chapter, objective)) {
-          return {
-            success: false,
-            error: `Chapter objective not met: ${objective}`
-          };
-        }
-      }
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: `Content validation failed: ${error.message}`
-      };
-    }
-  }
-
-  private async validateStyle(chapter: string): Promise<ValidationResult> {
-    try {
-      const styleChecks = [
-        this.checkWritingStyle(chapter),
-        this.checkDialogueStyle(chapter),
-        this.checkDescriptiveStyle(chapter),
-        this.checkVoiceConsistency(chapter)
-      ];
-
-      const results = await Promise.all(styleChecks);
-      const failures = results.filter(result => !result.success);
-
-      if (failures.length > 0) {
-        return {
-          success: false,
-          error: failures.map(f => f.error).join(', ')
-        };
-      }
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: `Style validation failed: ${error.message}`
-      };
-    }
-  }
-
-  private async validateContinuity(chapter: string): Promise<ValidationResult> {
-    try {
-      // Check consistency with previous chapters
-      if (this.context.previousSummaries.length > 0) {
-        const continuityIssues = await this.checkContinuityWithPrevious(chapter);
-        if (continuityIssues.length > 0) {
-          return {
-            success: false,
-            error: `Continuity issues: ${continuityIssues.join(', ')}`
-          };
-        }
-      }
-
-      // Check internal consistency
-      const internalIssues = await this.checkInternalConsistency(chapter);
-      if (internalIssues.length > 0) {
-        return {
-          success: false,
-          error: `Internal consistency issues: ${internalIssues.join(', ')}`
-        };
-      }
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: `Continuity validation failed: ${error.message}`
-      };
-    }
-  }
-
-  private async validateTechnicalRequirements(
-    chapter: string,
-    outline: OutlineSection
-  ): Promise<ValidationResult> {
-    try {
-      // Verify word count
-      const wordCount = this.countWords(chapter);
-      const targetCount = outline.technicalNotes.targetWordCount;
-      const tolerance = 0.1; // 10% tolerance
-
-      if (Math.abs(wordCount - targetCount) > targetCount * tolerance) {
-        return {
-          success: false,
-          error: `Word count ${wordCount} outside acceptable range (${targetCount} ± ${targetCount * tolerance})`
-        };
-      }
-
-      // Verify pacing
-      const pacingScore = await this.analyzePacing(chapter);
-      if (Math.abs(pacingScore - outline.technicalNotes.paceTarget) > 1) {
-        return {
-          success: false,
-          error: 'Pacing does not match target'
-        };
-      }
-
-      // Verify dialogue ratio
-      const dialogueRatio = await this.analyzeDialogueRatio(chapter);
-      const targetRatio = this.context.settings.pacingStyle.dialogNarrative / 5;
-      if (Math.abs(dialogueRatio - targetRatio) > 0.1) {
-        return {
-          success: false,
-          error: 'Dialogue ratio outside acceptable range'
-        };
-      }
-
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: `Technical validation failed: ${error.message}`
-      };
-    }
-  }
-
   private async summarizePreviousChapters(): Promise<string[]> {
     return this.context.previousSummaries.map(summary => {
       const events = summary.keyEvents.join('. ');
@@ -422,13 +243,10 @@ export class ChapterGenerator {
 
   private async getCurrentCharacterStates(): Promise<Map<string, string>> {
     const states = new Map<string, string>();
-
-    // Track main character development
     const mainChar = this.context.storyBible.characters.mainCharacter;
     const mainCharProgress = this.calculateCharacterProgress('protagonist');
     states.set('protagonist', mainCharProgress);
 
-    // Track supporting characters
     this.context.storyBible.characters.supportingCharacters.forEach(char => {
       const charProgress = this.calculateCharacterProgress(char.role);
       states.set(char.role, charProgress);
@@ -451,34 +269,20 @@ export class ChapterGenerator {
       .flatMap(summary => summary.keyEvents);
 
     const mainPlot = this.context.storyBible.plot.structure.mainPlot;
-    const completedPlotPoints = [
+    const plotPoints = [
       mainPlot.hook,
       mainPlot.incitingIncident,
       ...mainPlot.risingAction,
       mainPlot.climax,
       mainPlot.resolution
-    ].filter(point => 
+    ];
+
+    const completedPlotPoints = plotPoints.filter(point => 
       completedEvents.some(event => event.includes(point))
     );
 
-    const progress = completedPlotPoints.length / (mainPlot.risingAction.length + 4); // +4 for hook, inciting, climax, resolution
-    return `${Math.round(progress * 100)}% of main plot points completed. Current phase: ${this.determineCurrentPlotPhase(completedPlotPoints)}`;
-  }
-
-  private determineCurrentPlotPhase(completedPoints: string[]): string {
-    if (!completedPoints.includes(this.context.storyBible.plot.structure.mainPlot.hook)) {
-      return 'Setup';
-    } else if (!completedPoints.includes(this.context.storyBible.plot.structure.mainPlot.incitingIncident)) {
-      return 'Introduction';
-    } else if (completedPoints.length < this.context.storyBible.plot.structure.mainPlot.risingAction.length / 2) {
-      return 'Rising Action (Early)';
-    } else if (!completedPoints.includes(this.context.storyBible.plot.structure.mainPlot.climax)) {
-      return 'Rising Action (Late)';
-    } else if (!completedPoints.includes(this.context.storyBible.plot.structure.mainPlot.resolution)) {
-      return 'Falling Action';
-    } else {
-      return 'Resolution';
-    }
+    const progress = completedPlotPoints.length / plotPoints.length;
+    return `${Math.round(progress * 100)}% complete`;
   }
 
   private async getThematicProgressStatus(): Promise<string[]> {
@@ -510,32 +314,11 @@ export class ChapterGenerator {
       ...outline.characters,
       mainChar.profile.role
     ]);
-
     return Array.from(requiredCharacters);
   }
 
   private async getPlotRequirements(outline: OutlineSection): Promise<string[]> {
-    return outline.objectives.map(objective => ({
-      objective,
-      requiredElements: this.getRequiredElementsForObjective(objective)
-    }));
-  }
-
-  private getRequiredElementsForObjective(objective: string): string[] {
-    // Extract required story elements based on objective type
-    const requirements: string[] = [];
-
-    if (objective.includes('character development')) {
-      requirements.push('internal monologue', 'character interaction');
-    }
-    if (objective.includes('plot advancement')) {
-      requirements.push('action sequence', 'consequence revelation');
-    }
-    if (objective.includes('world building')) {
-      requirements.push('setting description', 'cultural detail');
-    }
-
-    return requirements;
+    return outline.objectives;
   }
 
   private getPacingRequirements(outline: OutlineSection): number {
@@ -582,175 +365,14 @@ export class ChapterGenerator {
     }[this.context.settings.basicSettings.length] || 2500;
 
     const paceMultiplier = {
-      1: 1.2, // Slower pace = more words
+      1: 1.2,
       2: 1.1,
       3: 1.0,
       4: 0.9,
-      5: 0.8  // Faster pace = fewer words
+      5: 0.8
     }[this.context.settings.pacingStyle.plotDevelopment] || 1.0;
 
     return Math.floor(baseCount * paceMultiplier);
-  }
-
-  private async findSceneElements(chapter: string, scene: any): Promise<boolean> {
-    const elements = [
-      scene.location,
-      scene.conflict,
-      ...scene.characters
-    ];
-
-    return elements.every(element => 
-      chapter.toLowerCase().includes(element.toLowerCase())
-    );
-  }
-
-  private async findCharacterPresence(
-    chapter: string,
-    character: string,
-    scene: any
-  ): Promise<boolean> {
-    // Check for character name mentions
-    if (!chapter.toLowerCase().includes(character.toLowerCase())) {
-      return false;
-    }
-
-    // Check for character actions
-    const characterActions = await this.extractCharacterActions(chapter, character);
-    return characterActions.length > 0;
-  }
-
-  private async findObjectiveCompletion(
-    chapter: string,
-    objective: string,
-    scene: any
-  ): Promise<boolean> {
-    // Break down objective into key components
-    const components = objective.split(' AND ');
-    return components.every(component => 
-      this.validateObjectiveComponent(chapter, component, scene)
-    );
-  }
-
-  private validateObjectiveComponent(
-    chapter: string,
-    component: string,
-    scene: any
-  ): boolean {
-    // Check for key phrases and outcomes
-    const keyPhrases = component.toLowerCase().split(' OR ');
-    return keyPhrases.some(phrase => 
-      chapter.toLowerCase().includes(phrase)
-    );
-  }
-
-  private async findChapterObjective(
-    chapter: string,
-    objective: string
-  ): Promise<boolean> {
-    const objectiveElements = objective.split(' AND ');
-    return objectiveElements.every(element => 
-      this.searchForObjectiveElement(chapter, element)
-    );
-  }
-
-  private searchForObjectiveElement(chapter: string, element: string): boolean {
-    const variations = this.generatePhraseVariations(element);
-    return variations.some(variation => 
-      chapter.toLowerCase().includes(variation.toLowerCase())
-    );
-  }
-
-  private generatePhraseVariations(phrase: string): string[] {
-    // Generate variations of the phrase to account for different wordings
-    const basePhrase = phrase.toLowerCase();
-    const variations = [basePhrase];
-
-    // Add passive voice variation
-    if (basePhrase.includes(' by ')) {
-      variations.push(
-        basePhrase.split(' by ').reverse().join(' ')
-      );
-    }
-
-    // Add synonym variations
-    const synonyms = this.getSynonyms(basePhrase);
-    variations.push(...synonyms);
-
-    return variations;
-  }
-
-  private getSynonyms(phrase: string): string[] {
-    // Basic synonym mapping for common story elements
-    const synonymMap: { [key: string]: string[] } = {
-      'discover': ['find', 'uncover', 'reveal', 'learn'],
-      'realize': ['understand', 'comprehend', 'grasp', 'recognize'],
-      'fight': ['battle', 'struggle', 'confront', 'face'],
-      'help': ['assist', 'aid', 'support', 'rescue'],
-      'find': ['locate', 'discover', 'uncover', 'spot']
-    };
-
-    const words = phrase.split(' ');
-    const variations: string[] = [];
-
-    words.forEach(word => {
-      const synonyms = synonymMap[word.toLowerCase()] || [];
-      if (synonyms.length > 0) {
-        synonyms.forEach(synonym => {
-          variations.push(
-            phrase.replace(word, synonym)
-          );
-        });
-      }
-    });
-
-    return variations;
-  }
-
-  private async extractCharacterActions(
-    chapter: string,
-    character: string
-  ): Promise<string[]> {
-    const sentences = chapter.split(/[.!?]+/);
-    return sentences.filter(sentence => {
-      const lowercaseSentence = sentence.toLowerCase();
-      const lowercaseCharacter = character.toLowerCase();
-      return (
-        lowercaseSentence.includes(lowercaseCharacter) &&
-        this.containsActionVerb(lowercaseSentence)
-      );
-    });
-  }
-
-  private containsActionVerb(sentence: string): boolean {
-    const actionVerbs = [
-      'walk', 'run', 'jump', 'speak', 'say', 'look',
-      'move', 'take', 'give', 'think', 'feel', 'see'
-    ];
-    return actionVerbs.some(verb => 
-      sentence.includes(verb) || 
-      sentence.includes(verb + 's') || 
-      sentence.includes(verb + 'ed')
-    );
-  }
-
-  private async retryOperation<T>(
-    operation: () => Promise<T>,
-    errorMessage: string
-  ): Promise<T> {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
-      try {
-        return await operation();
-      } catch (error) {
-        lastError = error as Error;
-        if (attempt < this.retryAttempts) {
-          await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
-        }
-      }
-    }
-
-    throw new Error(`${errorMessage}: ${lastError?.message}`);
   }
 
   private formatChapterPrompt(prompt: ChapterPrompt): string {
@@ -776,43 +398,23 @@ export class ChapterGenerator {
     `;
   }
 
-  private async checkWritingStyle(chapter: string): Promise<ValidationResult> {
-    const targetStyle = this.context.settings.basicSettings.writingStyle;
-    const styleAnalysis = await this.analyzeWritingStyle(chapter);
+  private async retryOperation<T>(
+    operation: () => Promise<T>,
+    errorMessage: string
+  ): Promise<T> {
+    let lastError: Error | null = null;
     
-    if (styleAnalysis !== targetStyle) {
-      return {
-        success: false,
-        error: `Writing style mismatch: expected ${targetStyle}, found ${styleAnalysis}`
-      };
+    for (let attempt = 1; attempt <= this.retryAttempts; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt < this.retryAttempts) {
+          await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempt));
+        }
+      }
     }
-    
-    return { success: true };
-  }
 
-  private async analyzeWritingStyle(text: string): Promise<string> {
-    // Implement writing style analysis
-    // This would use text analysis to determine the dominant writing style
-    return '';
-  }
-
-  private countWords(text: string): number {
-    return text.trim().split(/\s+/).length;
-  }
-
-  private async analyzePacing(chapter: string): Promise<number> {
-    // Implement pacing analysis
-    // This would calculate the pacing based on various factors
-    return 3;
-  }
-
-  private async analyzeDialogueRatio(chapter: string): Promise<number> {
-    const dialogueMatches = chapter.match(/["'](?:\\.|[^"'\\])*["']/g) || [];
-    const totalWords = this.countWords(chapter);
-    const dialogueWords = dialogueMatches.reduce((count, match) => 
-      count + this.countWords(match), 0
-    );
-    
-    return dialogueWords / totalWords;
+    throw new Error(`${errorMessage}: ${lastError?.message}`);
   }
 }
