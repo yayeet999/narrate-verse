@@ -1,6 +1,7 @@
 import React from 'react';
 import { StorySettings } from '@/types/story';
 import { UseFormReturn } from 'react-hook-form';
+import { STORY_LENGTHS } from '@/lib/constants/story';
 
 interface BasicSettingsStepProps {
   form: UseFormReturn<StorySettings>;
@@ -16,11 +17,7 @@ export function BasicSettingsStep({ form }: BasicSettingsStepProps) {
     'Literary Fiction', 'Adventure', 'Crime'
   ];
 
-  const lengths = [
-    { value: '5-10', label: '5-10 pages (2-4 major scenes)' },
-    { value: '10-20', label: '10-20 pages (4-8 scenes)' },
-    { value: '20-30', label: '20-30 pages (6-12 scenes)' }
-  ];
+  const lengths = Object.values(STORY_LENGTHS);
 
   const writingStyles = [
     'Lyrical/Poetic', 'Minimalist', 'Stream of Consciousness',

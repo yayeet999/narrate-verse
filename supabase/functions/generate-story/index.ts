@@ -38,9 +38,9 @@ serve(async (req) => {
 
     // Calculate target word count based on length setting
     const targetWordCount = {
-      '5-10': 2000,
-      '10-20': 4000,
-      '20-30': 6000
+      '5-10': 2000,    // Approximately 400 words per page
+      '10-20': 4000,   // Maintaining consistent density
+      '20-30': 6000    // Longer format for more complex stories
     }[storyParams.basicSettings.length] || 4000;
 
     console.log(`Target word count: ${targetWordCount} words`);
@@ -53,7 +53,7 @@ serve(async (req) => {
           role: "system",
           content: `You are a creative story writer. Generate a detailed story of approximately ${targetWordCount} words based on these parameters:
             Genre: ${storyParams.basicSettings.genre}
-            Length: ${storyParams.basicSettings.length} (aim for ${targetWordCount} words)
+            Length: ${storyParams.basicSettings.length} (aim for ${targetWordCount} words, approximately 400 words per page)
             Writing Style: ${storyParams.basicSettings.writingStyle}
             World Type: ${storyParams.worldBuilding.worldType}
             Time Period: ${storyParams.worldBuilding.timePeriod}
@@ -63,7 +63,10 @@ serve(async (req) => {
             - Include rich character development
             - Maintain consistent tone and style throughout
             - Pay attention to descriptive details and world-building
-            - Create engaging dialogue and interactions`
+            - Create engaging dialogue and interactions
+            - Each major scene should be approximately 500-1000 words
+            - Include clear scene breaks between major scenes
+            - Ensure proper exposition, rising action, climax, and resolution`
         },
         {
           role: "user",
