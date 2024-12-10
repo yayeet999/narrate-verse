@@ -36,14 +36,14 @@ serve(async (req) => {
       timePeriod: storyParams.worldBuilding.timePeriod
     });
 
-    // Calculate target word count based on length setting
-    const targetWordCount = {
-      '5-10': 2000,    // Approximately 400 words per page
-      '10-20': 4000,   // Maintaining consistent density
-      '20-30': 6000    // Longer format for more complex stories
-    }[storyParams.basicSettings.length] || 4000;
+    // Calculate target token count based on length setting
+    const targetTokenCount = {
+      '5-10': 3000,    // Approximately 2000 words
+      '10-20': 6000,   // Approximately 4000 words
+      '20-30': 9000    // Approximately 6000 words
+    }[storyParams.basicSettings.length] || 6000;
 
-    console.log(`Target word count: ${targetWordCount} words`);
+    console.log(`Target token count: ${targetTokenCount} tokens (approximately ${Math.floor(targetTokenCount * 0.75)} words)`);
 
     // Generate story content based on parameters
     const completion = await openai.chat.completions.create({
@@ -51,9 +51,9 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: `You are a creative story writer. Generate a detailed story of approximately ${targetWordCount} words based on these parameters:
+          content: `You are a creative story writer. Generate a detailed story of approximately ${targetTokenCount} tokens (${Math.floor(targetTokenCount * 0.75)} words) based on these parameters:
             Genre: ${storyParams.basicSettings.genre}
-            Length: ${storyParams.basicSettings.length} (aim for ${targetWordCount} words, approximately 400 words per page)
+            Length: ${storyParams.basicSettings.length} (aim for ${targetTokenCount} tokens)
             Writing Style: ${storyParams.basicSettings.writingStyle}
             World Type: ${storyParams.worldBuilding.worldType}
             Time Period: ${storyParams.worldBuilding.timePeriod}
@@ -64,9 +64,11 @@ serve(async (req) => {
             - Maintain consistent tone and style throughout
             - Pay attention to descriptive details and world-building
             - Create engaging dialogue and interactions
-            - Each major scene should be approximately 500-1000 words
+            - Each major scene should be approximately 750-1500 tokens
             - Include clear scene breaks between major scenes
-            - Ensure proper exposition, rising action, climax, and resolution`
+            - Ensure proper exposition, rising action, climax, and resolution
+            
+            IMPORTANT: The story MUST be at least ${targetTokenCount * 0.9} tokens long. Do not end the story prematurely.`
         },
         {
           role: "user",
@@ -74,16 +76,17 @@ serve(async (req) => {
         }
       ],
       temperature: 0.7,
+      max_tokens: targetTokenCount + 500, // Add buffer for system message
     });
 
     const content = completion.choices[0].message.content;
-    const wordCount = content.split(/\s+/).length;
+    const tokenCount = content.split(/\s+/).length * 1.33; // Rough estimation of tokens
     
     console.log(`Generated story statistics:`, {
-      actualWordCount: wordCount,
-      targetWordCount: targetWordCount,
-      difference: wordCount - targetWordCount,
-      percentageOfTarget: Math.round((wordCount / targetWordCount) * 100)
+      estimatedTokenCount: Math.floor(tokenCount),
+      targetTokenCount: targetTokenCount,
+      difference: Math.floor(tokenCount - targetTokenCount),
+      percentageOfTarget: Math.round((tokenCount / targetTokenCount) * 100)
     });
 
     return new Response(
