@@ -1,12 +1,15 @@
 import React from 'react';
 import { StorySettings } from '@/types/story';
+import { UseFormReturn } from 'react-hook-form';
 
 interface BasicSettingsStepProps {
-  settings: StorySettings;
-  updateSettings: (settings: StorySettings) => void;
+  form: UseFormReturn<StorySettings>;
 }
 
-export function BasicSettingsStep({ settings, updateSettings }: BasicSettingsStepProps) {
+export function BasicSettingsStep({ form }: BasicSettingsStepProps) {
+  const { watch, setValue } = form;
+  const settings = watch();
+
   const genres = [
     'Fantasy', 'Science Fiction', 'Mystery/Thriller', 'Romance',
     'Historical Fiction', 'Contemporary Fiction', 'Horror',
@@ -24,6 +27,13 @@ export function BasicSettingsStep({ settings, updateSettings }: BasicSettingsSte
     'Journalistic/Documentary', 'Ornate/Baroque', 'Conversational/Casual'
   ];
 
+  const updateBasicSettings = (field: keyof StorySettings['basicSettings'], value: string) => {
+    setValue('basicSettings', {
+      ...settings.basicSettings,
+      [field]: value
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -32,11 +42,8 @@ export function BasicSettingsStep({ settings, updateSettings }: BasicSettingsSte
         </label>
         <select 
           className="w-full p-2 border border-gray-300 rounded-md"
-          value={settings.basicSettings.genre}
-          onChange={(e) => updateSettings({
-            ...settings,
-            basicSettings: { ...settings.basicSettings, genre: e.target.value }
-          })}
+          value={settings.basicSettings?.genre || ''}
+          onChange={(e) => updateBasicSettings('genre', e.target.value)}
         >
           <option value="">Select a genre</option>
           {genres.map(genre => (
@@ -53,15 +60,13 @@ export function BasicSettingsStep({ settings, updateSettings }: BasicSettingsSte
           {lengths.map(length => (
             <button
               key={length.value}
+              type="button"
               className={`p-4 border rounded-lg text-center transition-colors ${
-                settings.basicSettings.length === length.value
+                settings.basicSettings?.length === length.value
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => updateSettings({
-                ...settings,
-                basicSettings: { ...settings.basicSettings, length: length.value }
-              })}
+              onClick={() => updateBasicSettings('length', length.value)}
             >
               {length.label}
             </button>
@@ -77,15 +82,13 @@ export function BasicSettingsStep({ settings, updateSettings }: BasicSettingsSte
           {writingStyles.map(style => (
             <button
               key={style}
+              type="button"
               className={`p-4 border rounded-lg text-center transition-colors ${
-                settings.basicSettings.writingStyle === style
+                settings.basicSettings?.writingStyle === style
                   ? 'border-blue-500 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
-              onClick={() => updateSettings({
-                ...settings,
-                basicSettings: { ...settings.basicSettings, writingStyle: style }
-              })}
+              onClick={() => updateBasicSettings('writingStyle', style)}
             >
               {style}
             </button>

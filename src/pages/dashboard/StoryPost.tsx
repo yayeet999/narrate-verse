@@ -161,25 +161,24 @@ const StoryPost = () => {
       );
     }
 
-    const StepComponent = {
-      1: BasicSettingsStep,
-      2: WorldBuildingStep,
-      3: PacingStyleStep,
-      4: CharacterCreationStep,
-      5: ThematicElementsStep,
-      6: CustomInstructionsStep,
-      7: ReviewSettingsStep,
-    }[currentStep];
-
-    if (!StepComponent) return null;
-
-    return (
-      <Form {...form}>
-        <form>
-          <StepComponent form={form} />
-        </form>
-      </Form>
-    );
+    switch (currentStep) {
+      case 1:
+        return <BasicSettingsStep form={form} />;
+      case 2:
+        return <WorldBuildingStep form={form} />;
+      case 3:
+        return <PacingStyleStep form={form} />;
+      case 4:
+        return <CharacterCreationStep form={form} />;
+      case 5:
+        return <ThematicElementsStep form={form} />;
+      case 6:
+        return <CustomInstructionsStep form={form} />;
+      case 7:
+        return <ReviewSettingsStep form={form} />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -224,7 +223,11 @@ const StoryPost = () => {
       )}
 
       <Card className="p-6">
-        {renderCurrentStep()}
+        <Form {...form}>
+          <form onSubmit={(e) => e.preventDefault()}>
+            {renderCurrentStep()}
+          </form>
+        </Form>
       </Card>
 
       <div className="flex justify-between mt-6">
