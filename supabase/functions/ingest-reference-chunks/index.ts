@@ -22,8 +22,17 @@ serve(async (req) => {
     console.log('=== Edge Function: Ingest Reference Chunks ===');
     
     // Get the request body and log it
-    const body = await req.json();
-    console.log('Received request body:', JSON.stringify(body, null, 2));
+    const requestText = await req.text();
+    console.log('Raw request body:', requestText);
+    
+    let body;
+    try {
+      body = JSON.parse(requestText);
+      console.log('Parsed request body:', JSON.stringify(body, null, 2));
+    } catch (e) {
+      console.error('Failed to parse request body:', e);
+      throw new Error('Invalid JSON in request body');
+    }
 
     // Validate chunks array exists
     if (!body.chunks) {
@@ -41,18 +50,27 @@ serve(async (req) => {
 
     // Validate each chunk
     chunks.forEach((chunk, index) => {
+      console.log(`Validating chunk ${index}:`, {
+        hasContent: !!chunk.content,
+        contentLength: chunk.content?.length,
+        category: chunk.category,
+        chunkNumber: chunk.chunkNumber
+      });
+
       if (!chunk.content || !chunk.category || typeof chunk.chunkNumber !== 'number') {
         console.error(`Invalid chunk at index ${index}:`, chunk);
         throw new Error(`Invalid chunk format at index ${index}`);
       }
     });
 
-    console.log('Validated chunks:', chunks);
+    console.log('All chunks validated successfully');
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    console.log('Attempting database insertion...');
 
     // Insert chunks into the database
     const { data, error } = await supabaseClient

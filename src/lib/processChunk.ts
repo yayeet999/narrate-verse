@@ -12,7 +12,9 @@ export const processChunk = async (
 ): Promise<void> => {
   console.log('=== Processing Chunk ===');
   console.log('Chunk Number:', chunkNumber);
-  console.log('Raw chunk content:', chunkContent);
+  console.log('Raw chunk content length:', chunkContent.length);
+  console.log('First 100 characters:', chunkContent.substring(0, 100));
+  console.log('Contains MAIN SECTIONS:', chunkContent.includes('MAIN SECTIONS:'));
 
   try {
     // First, validate the chunk has the expected format
@@ -24,6 +26,8 @@ export const processChunk = async (
     // Extract the main sections with a more flexible regex
     const mainSectionsMatch = chunkContent.match(/MAIN SECTIONS:[\s]*([^\n]+)/);
     console.log('Main sections match result:', mainSectionsMatch);
+    console.log('Full regex match:', mainSectionsMatch?.[0]);
+    console.log('Captured group:', mainSectionsMatch?.[1]);
 
     if (!mainSectionsMatch || !mainSectionsMatch[1]) {
       console.error('Failed to match MAIN SECTIONS pattern');
@@ -41,7 +45,11 @@ export const processChunk = async (
       chunkNumber: chunkNumber
     };
 
-    console.log('Prepared chunk data:', chunk);
+    console.log('Prepared chunk data:', {
+      chunkNumber: chunk.chunkNumber,
+      category: chunk.category,
+      contentLength: chunk.content.length
+    });
 
     const { data, error } = await supabase.functions.invoke('ingest-reference-chunks', {
       body: { chunks: [chunk] }
