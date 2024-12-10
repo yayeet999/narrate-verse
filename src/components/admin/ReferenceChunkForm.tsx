@@ -12,6 +12,21 @@ export const ReferenceChunkForm = () => {
   const [chunkNumber, setChunkNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const generateEmbedding = async (chunkId: string) => {
+    try {
+      console.log('Generating embedding for chunk:', chunkId);
+      const { error } = await supabase.functions.invoke('generate-embeddings', {
+        body: { chunkId }
+      });
+
+      if (error) throw error;
+      console.log('Successfully generated embedding');
+    } catch (error) {
+      console.error('Error generating embedding:', error);
+      toast.error('Failed to generate embedding');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -37,7 +52,9 @@ export const ReferenceChunkForm = () => {
             category,
             chunk_number: parseInt(chunkNumber)
           }
-        ]);
+        ])
+        .select()
+        .single();
 
       if (error) {
         console.error('Supabase error:', error);
@@ -45,6 +62,10 @@ export const ReferenceChunkForm = () => {
       }
 
       console.log('Successfully added chunk:', data);
+      
+      // Generate embedding for the new chunk
+      await generateEmbedding(data.id);
+      
       toast.success('Reference chunk added successfully');
       
       // Clear form
