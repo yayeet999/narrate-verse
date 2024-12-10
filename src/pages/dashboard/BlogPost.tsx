@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { TypeLengthStep } from '@/components/blog/TypeLengthStep';
