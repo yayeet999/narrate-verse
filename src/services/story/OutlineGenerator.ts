@@ -20,6 +20,49 @@ export class OutlineGenerator {
     this.targetChapterCount = this.calculateTargetChapters();
   }
 
+  private calculateExpositionChapters(): number {
+    return Math.ceil(this.targetChapterCount * 0.2);
+  }
+
+  private calculateRisingActionChapters(): number {
+    return Math.ceil(this.targetChapterCount * 0.3);
+  }
+
+  private calculateClimaxChapters(): number {
+    return Math.ceil(this.targetChapterCount * 0.2);
+  }
+
+  private calculateFallingActionChapters(): number {
+    return Math.ceil(this.targetChapterCount * 0.15);
+  }
+
+  private calculateResolutionChapters(): number {
+    return Math.ceil(this.targetChapterCount * 0.15);
+  }
+
+  private async createStructuralFramework(): Promise<{
+    exposition: number;
+    risingAction: number;
+    climax: number;
+    fallingAction: number;
+    resolution: number;
+  }> {
+    const structure = {
+      exposition: this.calculateExpositionChapters(),
+      risingAction: this.calculateRisingActionChapters(),
+      climax: this.calculateClimaxChapters(),
+      fallingAction: this.calculateFallingActionChapters(),
+      resolution: this.calculateResolutionChapters()
+    };
+
+    const total = Object.values(structure).reduce((sum, count) => sum + count, 0);
+    if (total !== this.targetChapterCount) {
+      throw new Error('Structural framework chapter count mismatch');
+    }
+
+    return structure;
+  }
+
   async generateInitialOutline(): Promise<OutlineSection[]> {
     try {
       const structure = await this.createStructuralFramework();
@@ -71,51 +114,6 @@ export class OutlineGenerator {
     };
     const range = lengthMap[this.settings.basicSettings.length as keyof typeof lengthMap];
     return Math.floor((range.min + range.max) / 2);
-  }
-
-  private async createStructuralFramework(): Promise<{
-    exposition: number;
-    risingAction: number;
-    climax: number;
-    fallingAction: number;
-    resolution: number;
-  }> {
-    const structure = {
-      exposition: this.calculateExpositionChapters(),
-      risingAction: this.calculateRisingActionChapters(),
-      climax: this.calculateClimaxChapters(),
-      fallingAction: this.calculateFallingActionChapters(),
-      resolution: this.calculateResolutionChapters()
-    };
-
-    const total = Object.values(structure).reduce((sum, count) => sum + count, 0);
-    if (total !== this.targetChapterCount) {
-      throw new Error('Structural framework chapter count mismatch');
-    }
-
-    return Promise.resolve(structure);
-  }
-
-  private balanceSceneDistribution(outline: OutlineSection[]): OutlineSection[] {
-    // Implement scene distribution logic
-    return outline;
-  }
-
-  private calculatePaceTarget(progress: number): number {
-    return Math.floor(progress * 5) + 1;
-  }
-
-  private calculateSceneWordCount(section: string, sceneNumber: number): number {
-    return Math.floor((this.calculateChapterWordCount() / this.calculateSceneCount(section, 1)) * 1.2);
-  }
-
-  private enhanceCharacterPresence(
-    scenes: SceneOutline[],
-    characterArcs: Map<string, string[]>,
-    progress: number
-  ): SceneOutline[] {
-    // Implement character presence enhancement logic
-    return scenes;
   }
 
   private async generateChapterOutlines(
@@ -643,7 +641,7 @@ export class OutlineGenerator {
   private validateCharacterArcs(outline: OutlineSection[]): boolean {
     const characterArcs = this.mapCharacterArcs();
     const progressions = new Map<string, number>();
-
+    
     outline.forEach(chapter => {
       chapter.scenes.forEach(scene => {
         scene.characters.forEach(char => {
@@ -749,7 +747,7 @@ export class OutlineGenerator {
       exposition: 1.2,
       risingAction: 1.0,
       climax: 0.8,
-      fallingAction: 1.0,
+      fallingAction: 0.0,
       resolution: 1.1
     };
     return multipliers[section as keyof typeof multipliers] || 1.0;

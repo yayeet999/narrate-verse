@@ -17,10 +17,10 @@ export class TextAnalyzer {
     const dialogueMatches = chapter.match(/["'](?:\\.|[^"'\\])*["']/g) || [];
     const totalWords = this.countWords(chapter);
     const dialogueWords = dialogueMatches.reduce((count, match) => 
-      count + TextAnalyzer.countWords(match), 0
+      count + this.countWords(match), 0
     );
     
-    return dialogueWords / totalWords;
+    return totalWords > 0 ? dialogueWords / totalWords : 0;
   }
 
   static async checkWritingStyle(chapter: string, targetStyle: string): Promise<boolean> {
