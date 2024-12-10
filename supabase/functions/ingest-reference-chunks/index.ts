@@ -1,10 +1,15 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
-import { Configuration, OpenAIApi } from "https://esm.sh/openai@3.1.0"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+interface ReferenceChunk {
+  content: string
+  category: string
+  chunkNumber: number
 }
 
 serve(async (req) => {
@@ -14,74 +19,58 @@ serve(async (req) => {
   }
 
   try {
-    const { chunks } = await req.json()
-    
-    if (!chunks || !Array.isArray(chunks)) {
-      throw new Error('Invalid chunks format')
-    }
-
-    console.log(`Processing ${chunks.length} chunks...`)
-
-    const openai = new OpenAIApi(new Configuration({
-      apiKey: Deno.env.get('OPENAI_API_KEY'),
-    }))
-
-    const supabase = createClient(
+    const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const processedChunks = []
+    // Get the request body
+    const { chunks } = await req.json() as { chunks: ReferenceChunk[] }
     
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i]
-      console.log(`Processing chunk ${i + 1}...`)
+    console.log('Received chunks:', chunks)
 
-      // Generate embedding for the chunk
-      const embeddingResponse = await openai.createEmbedding({
-        model: "text-embedding-ada-002",
-        input: chunk.content,
-      })
-
-      const [{ embedding }] = embeddingResponse.data.data
-
-      // Store chunk with embedding
-      const { data, error } = await supabase
-        .from('story_reference_chunks')
-        .insert({
-          chunk_number: chunk.number,
-          content: chunk.content,
-          category: chunk.category || 'general',
-          embedding
-        })
-        .select()
-
-      if (error) {
-        throw new Error(`Failed to store chunk ${i + 1}: ${error.message}`)
-      }
-
-      processedChunks.push(data[0])
-      console.log(`Successfully processed and stored chunk ${i + 1}`)
+    if (!Array.isArray(chunks)) {
+      throw new Error('Invalid chunks format')
     }
 
+    // Insert chunks into the database
+    const { data, error } = await supabaseClient
+      .from('story_reference_chunks')
+      .insert(
+        chunks.map(chunk => ({
+          chunk_number: chunk.chunkNumber,
+          content: chunk.content,
+          category: chunk.category
+        }))
+      )
+      .select()
+
+    if (error) {
+      throw error
+    }
+
+    console.log('Successfully inserted chunks:', data)
+
     return new Response(
-      JSON.stringify({ 
-        message: 'Chunks processed successfully', 
-        processedChunks 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+      JSON.stringify({ success: true, data }),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+        status: 200,
       }
     )
-
   } catch (error) {
-    console.error('Error processing chunks:', error)
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+        status: 400,
       }
     )
   }
