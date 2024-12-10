@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { StorySettings } from '@/types/story';
 import { Database } from '@/integrations/supabase/types';
 import { VectorSearchManager } from './VectorSearchManager';
