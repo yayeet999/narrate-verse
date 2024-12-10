@@ -1,55 +1,57 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { corsHeaders } from '../_shared/cors.ts'
-import axios from 'npm:axios'
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions'
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
     // Parse and validate request body
-    const { blogParams } = await req.json()
-    console.log('Received blog parameters:', JSON.stringify(blogParams, null, 2))
+    const { blogParams } = await req.json();
+    console.log('Received blog parameters:', JSON.stringify(blogParams, null, 2));
 
     // Validate API key
-    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY')
+    const PERPLEXITY_API_KEY = Deno.env.get('PERPLEXITY_API_KEY');
     if (!PERPLEXITY_API_KEY) {
-      throw new Error('API key configuration missing')
+      throw new Error('API key configuration missing');
     }
 
     // Validate blog parameters
     if (!blogParams?.type || !blogParams?.length || !blogParams?.targetAudience) {
-      console.error('Missing required blog parameters:', blogParams)
-      throw new Error('Missing required blog parameters')
+      console.error('Missing required blog parameters:', blogParams);
+      throw new Error('Missing required blog parameters');
     }
 
     // Validate content style parameters
-    const contentStyle = blogParams.contentStyle || {}
-    const technicalLevel = contentStyle.technicalLevel || 3
-    const tone = contentStyle.tone || 3
-    const detailLevel = contentStyle.detailLevel || 3
+    const contentStyle = blogParams.contentStyle || {};
+    const technicalLevel = contentStyle.technicalLevel || 3;
+    const tone = contentStyle.tone || 3;
+    const detailLevel = contentStyle.detailLevel || 3;
 
-    console.log('Content style parameters:', { technicalLevel, tone, detailLevel })
+    console.log('Content style parameters:', { technicalLevel, tone, detailLevel });
 
     // Helper functions with safe fallbacks
     const getTechnicalLevel = (level: number) => {
-      const levels = ['very casual', 'casual', 'balanced', 'technical', 'very technical']
-      return levels[Math.min(Math.max(0, level - 1), levels.length - 1)] || 'balanced'
-    }
+      const levels = ['very casual', 'casual', 'balanced', 'technical', 'very technical'];
+      return levels[Math.min(Math.max(0, level - 1), levels.length - 1)] || 'balanced';
+    };
 
     const getTone = (level: number) => {
-      const tones = ['very conversational', 'conversational', 'balanced', 'professional', 'very professional']
-      return tones[Math.min(Math.max(0, level - 1), tones.length - 1)] || 'balanced'
-    }
+      const tones = ['very conversational', 'conversational', 'balanced', 'professional', 'very professional'];
+      return tones[Math.min(Math.max(0, level - 1), tones.length - 1)] || 'balanced';
+    };
 
     const getDetailLevel = (level: number) => {
-      const details = ['brief overview', 'general overview', 'moderate detail', 'detailed', 'very detailed']
-      return details[Math.min(Math.max(0, level - 1), details.length - 1)] || 'moderate detail'
-    }
+      const details = ['brief overview', 'general overview', 'moderate detail', 'detailed', 'very detailed'];
+      return details[Math.min(Math.max(0, level - 1), details.length - 1)] || 'moderate detail';
+    };
 
     // Construct prompts with validated parameters
     const systemPrompt = `You are a professional blog writer. Create a ${blogParams.length} word ${blogParams.type.replace(/_/g, ' ')} 
@@ -64,21 +66,25 @@ ${blogParams.options?.includeExamples ? '- Include real-world examples\n' : ''}
 ${blogParams.options?.addVisualElements ? '- Suggest places for images or diagrams\n' : ''}
 ${blogParams.options?.seoOptimization ? '- Optimize content for search engines\n' : ''}
 
-First, thoroughly research the topic and cite your sources. Then write the blog post based on your research.`
+First, thoroughly research the topic and cite your sources. Then write the blog post based on your research.`;
 
-    const userPrompt = `Research and write a blog post about: ${blogParams.customInstructions || 'Write an informative blog post.'}`
+    const userPrompt = `Research and write a blog post about: ${blogParams.customInstructions || 'Write an informative blog post.'}`;
 
     console.log('Making API request with prompts:', {
       systemPrompt,
       userPrompt,
       model: "llama-3.1-sonar-small-128k-online"
-    })
+    });
 
     // Make API request with proper error handling
     try {
-      const response = await axios.post(
-        PERPLEXITY_API_URL,
-        {
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           model: "llama-3.1-sonar-small-128k-online",
           messages: [
             { role: "system", content: systemPrompt },
@@ -88,45 +94,45 @@ First, thoroughly research the topic and cite your sources. Then write the blog 
           temperature: 0.7,
           top_p: 0.9,
           top_k: 30,
-          presence_penalty: 0.6,
-          frequency_penalty: 0.3
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+          presence_penalty: 0.6 // Removed frequency_penalty to fix the API error
+        }),
+      });
 
-      console.log('API response received successfully')
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Perplexity API error response:', errorData);
+        throw new Error(`Perplexity API error: ${JSON.stringify(errorData)}`);
+      }
+
+      const data = await response.json();
+      console.log('API response received successfully');
       
-      if (!response.data?.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response format from Perplexity API')
+      if (!data?.choices?.[0]?.message?.content) {
+        throw new Error('Invalid response format from Perplexity API');
       }
 
       return new Response(
-        JSON.stringify({ content: response.data.choices[0].message.content }),
+        JSON.stringify({ content: data.choices[0].message.content }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         }
-      )
+      );
     } catch (apiError: any) {
       console.error('API Error:', {
         message: apiError.message,
         response: apiError.response?.data,
         status: apiError.response?.status
-      })
+      });
       
-      throw new Error(`Perplexity API error: ${apiError.response?.data?.error || apiError.message}`)
+      throw new Error(`Perplexity API error: ${apiError.response?.data?.error || apiError.message}`);
     }
 
   } catch (error: any) {
     console.error('Function error:', {
       message: error.message,
       stack: error.stack
-    })
+    });
 
     return new Response(
       JSON.stringify({ 
@@ -137,6 +143,6 @@ First, thoroughly research the topic and cite your sources. Then write the blog 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       }
-    )
+    );
   }
-})
+});
