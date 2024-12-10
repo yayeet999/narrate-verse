@@ -31,7 +31,13 @@ const ReferenceChunks = () => {
         throw error;
       }
       
-      console.log('Fetched chunks:', data);
+      // Log embedding status for all chunks
+      console.log('Chunks with embedding status:', data?.map(chunk => ({
+        id: chunk.id,
+        chunk_number: chunk.chunk_number,
+        has_embedding: !!chunk.embedding
+      })));
+      
       return data;
     }
   });
