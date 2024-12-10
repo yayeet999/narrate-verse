@@ -23,18 +23,12 @@ const Dashboard = () => {
   const handleSignOut = async () => {
     try {
       console.log('Starting sign out process...');
-      
-      // Clear any existing session state first
       await supabase.auth.signOut({ scope: 'local' });
       console.log('Local session cleared');
-      
-      // Navigate immediately after clearing the session
       navigate('/auth/login', { replace: true });
       toast.success('Signed out successfully');
-
     } catch (error) {
       console.error('Error during sign out:', error);
-      // Still try to navigate to login even if there's an error
       navigate('/auth/login', { replace: true });
       toast.error('There was an issue signing out, but you have been redirected to login');
     }

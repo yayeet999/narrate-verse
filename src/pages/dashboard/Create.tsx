@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, ScrollText, Book, Gamepad } from "lucide-react";
+import { BookOpen, ScrollText, Book, Gamepad, PenTool } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -10,7 +10,7 @@ const contentTypes = [
     id: "blog",
     title: "Blog Post",
     description: "Generate expert SEO-optimized articles and blog posts",
-    icon: BookOpen,
+    icon: Book,
     color: "bg-purple-100 dark:bg-purple-900/20",
     iconColor: "text-purple-500",
   },
@@ -26,7 +26,7 @@ const contentTypes = [
     id: "novel",
     title: "Novel",
     description: "Write your next bestselling novel",
-    icon: Book,
+    icon: PenTool,
     color: "bg-green-100 dark:bg-green-900/20",
     iconColor: "text-green-500",
   },
@@ -66,7 +66,6 @@ const CreateContent = () => {
         throw error;
       }
 
-      // If no subscription is found, return null instead of throwing an error
       if (!data || data.length === 0) {
         console.log('No subscription found for user');
         return null;
@@ -112,8 +111,9 @@ const CreateContent = () => {
       return;
     }
 
-    // Navigate to the appropriate creation page
-    navigate(`/dashboard/editor/${contentType}`);
+    if (contentType === 'blog') {
+      navigate('/dashboard/create/blog');
+    }
   };
 
   return (
