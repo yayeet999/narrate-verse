@@ -25,5 +25,9 @@ name = "generate-blog"
 verify_jwt = true
 
 [[functions]]
+name = "generate-story"
+verify_jwt = true
+
+[[functions]]
 name = "ingest-reference-chunks"
 verify_jwt = false

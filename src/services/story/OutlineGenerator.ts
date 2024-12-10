@@ -93,35 +93,29 @@ export class OutlineGenerator {
       throw new Error('Structural framework chapter count mismatch');
     }
 
-    return structure;
+    return Promise.resolve(structure);
   }
 
-  private calculateExpositionChapters(): number {
-    const baseCount = Math.max(1, Math.floor(this.targetChapterCount * 0.2));
-    const complexityFactor = this.determineComplexityFactor();
-    return Math.min(baseCount + complexityFactor, Math.floor(this.targetChapterCount * 0.3));
+  private balanceSceneDistribution(outline: OutlineSection[]): OutlineSection[] {
+    // Implement scene distribution logic
+    return outline;
   }
 
-  private calculateRisingActionChapters(): number {
-    return Math.floor(this.targetChapterCount * 0.4);
+  private calculatePaceTarget(progress: number): number {
+    return Math.floor(progress * 5) + 1;
   }
 
-  private calculateClimaxChapters(): number {
-    return Math.min(2, Math.floor(this.targetChapterCount * 0.15));
+  private calculateSceneWordCount(section: string, sceneNumber: number): number {
+    return Math.floor((this.calculateChapterWordCount() / this.calculateSceneCount(section, 1)) * 1.2);
   }
 
-  private calculateFallingActionChapters(): number {
-    return Math.floor(this.targetChapterCount * 0.15);
-  }
-
-  private calculateResolutionChapters(): number {
-    return Math.max(1, Math.floor(this.targetChapterCount * 0.1));
-  }
-
-  private determineComplexityFactor(): number {
-    const worldDepth = this.settings.worldBuilding.settingDetail;
-    const characterComplexity = this.storyBible.characters.supportingCharacters.length;
-    return Math.floor((worldDepth + characterComplexity) / 4);
+  private enhanceCharacterPresence(
+    scenes: SceneOutline[],
+    characterArcs: Map<string, string[]>,
+    progress: number
+  ): SceneOutline[] {
+    // Implement character presence enhancement logic
+    return scenes;
   }
 
   private async generateChapterOutlines(
