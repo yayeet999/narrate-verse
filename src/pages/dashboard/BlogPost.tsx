@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
-import { supabase } from "@/integrations/supabase/client";
 import { TypeLengthStep } from '@/components/blog/TypeLengthStep';
 import { AudienceStyleStep } from '@/components/blog/AudienceStyleStep';
 import { OptionsStep } from '@/components/blog/OptionsStep';
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import type { BlogParameters, BlogFormStep } from '@/types/blog';
 
+// Move steps configuration to a separate constant
 const STEPS: { [key in BlogFormStep]: { title: string; description: string } } = {
   'type-length': { 
     title: 'Basic Settings',
@@ -114,6 +114,11 @@ const BlogPost = () => {
     setIsGenerating(false);
   };
 
+  const handleGenerateStart = () => {
+    console.log('Starting generation...');
+    setIsGenerating(true);
+  };
+
   const nextStep = () => {
     const steps: BlogFormStep[] = ['type-length', 'audience-style', 'options', 'custom', 'review'];
     const currentIndex = steps.indexOf(currentStep);
@@ -135,7 +140,6 @@ const BlogPost = () => {
     const currentIndex = steps.indexOf(currentStep);
     const targetIndex = steps.indexOf(step);
     
-    // Only allow going back to previous steps
     if (targetIndex < currentIndex) {
       setCurrentStep(step);
     }
@@ -218,6 +222,7 @@ const BlogPost = () => {
                   onBack={() => setCurrentStep('custom')} 
                   isGenerating={isGenerating}
                   onPreview={handlePreview}
+                  onGenerateStart={handleGenerateStart}
                 />
               )}
               {currentStep === 'preview' && (

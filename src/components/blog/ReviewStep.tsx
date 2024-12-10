@@ -10,24 +10,28 @@ export const ReviewStep = ({
   form, 
   onBack, 
   isGenerating,
-  onPreview 
+  onPreview,
+  onGenerateStart 
 }: { 
   form: any; 
   onBack: () => void; 
   isGenerating: boolean;
   onPreview: (content: string) => void;
+  onGenerateStart: () => void;
 }) => {
   const values = form.getValues();
   
   const handleGenerateBlog = async () => {
     try {
+      onGenerateStart(); // Call this before starting the generation
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         toast.error("You must be logged in to generate content");
         return;
       }
 
-      // Call the Edge Function using supabase.functions.invoke
+      console.log('Generating blog with values:', values);
       const { data, error } = await supabase.functions.invoke('generate-blog', {
         body: { blogParams: values }
       });
@@ -40,7 +44,7 @@ export const ReviewStep = ({
         throw new Error('No content received from the generation service');
       }
 
-      console.log('Generated content:', data.content); // Debug log
+      console.log('Generated content:', data.content);
       onPreview(data.content);
 
     } catch (error) {
