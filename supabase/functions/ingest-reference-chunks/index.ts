@@ -19,20 +19,40 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== Edge Function: Ingest Reference Chunks ===');
+    
+    // Get the request body and log it
+    const body = await req.json();
+    console.log('Received request body:', JSON.stringify(body, null, 2));
+
+    // Validate chunks array exists
+    if (!body.chunks) {
+      console.error('No chunks array in request body');
+      throw new Error('No chunks array provided');
+    }
+
+    const { chunks } = body as { chunks: ReferenceChunk[] };
+    
+    // Validate chunks is an array
+    if (!Array.isArray(chunks)) {
+      console.error('Invalid chunks format received');
+      throw new Error('Invalid chunks format: not an array');
+    }
+
+    // Validate each chunk
+    chunks.forEach((chunk, index) => {
+      if (!chunk.content || !chunk.category || typeof chunk.chunkNumber !== 'number') {
+        console.error(`Invalid chunk at index ${index}:`, chunk);
+        throw new Error(`Invalid chunk format at index ${index}`);
+      }
+    });
+
+    console.log('Validated chunks:', chunks);
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
-
-    // Get the request body
-    const { chunks } = await req.json() as { chunks: ReferenceChunk[] }
-    
-    console.log('Received chunks:', chunks)
-
-    if (!Array.isArray(chunks)) {
-      console.error('Invalid chunks format received');
-      throw new Error('Invalid chunks format')
-    }
 
     // Insert chunks into the database
     const { data, error } = await supabaseClient
@@ -47,11 +67,11 @@ serve(async (req) => {
       .select()
 
     if (error) {
-      console.error('Database error:', error)
-      throw error
+      console.error('Database error:', error);
+      throw error;
     }
 
-    console.log('Successfully inserted chunks:', data)
+    console.log('Successfully inserted chunks:', data);
 
     return new Response(
       JSON.stringify({ success: true, data }),
@@ -64,9 +84,12 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error processing request:', error)
+    console.error('Error processing request:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.response?.data || 'No additional details available'
+      }),
       {
         headers: {
           ...corsHeaders,
