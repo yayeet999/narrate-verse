@@ -59,16 +59,23 @@ const CreateContent = () => {
           subscription_tiers (*)
         `)
         .eq('user_id', session.user.id)
-        .single();
+        .limit(1);
 
       if (error) {
         console.error('Error fetching subscription:', error);
         throw error;
       }
 
-      console.log('User subscription data:', data);
-      return data;
+      // If no subscription is found, return null instead of throwing an error
+      if (!data || data.length === 0) {
+        console.log('No subscription found for user');
+        return null;
+      }
+
+      console.log('User subscription data:', data[0]);
+      return data[0];
     },
+    retry: false,
   });
 
   const handleContentTypeSelect = async (contentType: string) => {
@@ -80,7 +87,7 @@ const CreateContent = () => {
     }
 
     if (!userSubscription) {
-      toast.error("Unable to verify your subscription status");
+      toast.error("Unable to verify your subscription status. Please try refreshing the page.");
       return;
     }
 
@@ -140,7 +147,7 @@ const CreateContent = () => {
                   </p>
                 </CardContent>
               </Card>
-            )
+            );
           })}
         </div>
 
