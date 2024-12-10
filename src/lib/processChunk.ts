@@ -2,27 +2,31 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ChunkData {
   content: string;
-  context: string;
-  mainSections: string[];
-  relatedParameters: string[];
+  category: string;
+  chunkNumber: number;
 }
 
 export const processChunk = async (
   chunkContent: string,
   chunkNumber: number
 ): Promise<void> => {
-  console.log(`Processing chunk ${chunkNumber}`);
+  console.log(`Starting to process chunk ${chunkNumber}`);
+  console.log('Raw chunk content:', chunkContent);
 
   try {
-    // Parse the chunk content
-    const lines = chunkContent.split('\n');
-    const contextLine = lines.find(line => line.startsWith('CONTEXT:'));
-    const mainSectionsLine = lines.find(line => line.startsWith('MAIN SECTIONS:'));
-    const relatedParamsLine = lines.find(line => line.startsWith('RELATED PARAMETERS:'));
+    // Extract the main sections which will be our category
+    const mainSectionsMatch = chunkContent.match(/MAIN SECTIONS: (.*)/);
+    if (!mainSectionsMatch) {
+      throw new Error('Could not find MAIN SECTIONS in chunk content');
+    }
 
-    const chunk = {
+    // Get the first main section as the category
+    const mainSections = mainSectionsMatch[1].split(',')[0].trim();
+    console.log('Extracted category:', mainSections);
+
+    const chunk: ChunkData = {
       content: chunkContent,
-      category: mainSectionsLine?.split(':')[1]?.trim() || 'Uncategorized',
+      category: mainSections,
       chunkNumber: chunkNumber
     };
 
@@ -33,10 +37,11 @@ export const processChunk = async (
     });
 
     if (error) {
+      console.error('Error from edge function:', error);
       throw error;
     }
 
-    console.log('Successfully processed chunk:', data);
+    console.log('Successfully processed chunk. Response:', data);
   } catch (error) {
     console.error('Error processing chunk:', error);
     throw error;
