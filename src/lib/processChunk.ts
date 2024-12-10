@@ -15,7 +15,7 @@ export const processChunk = async (
 
   try {
     // Extract the main sections which will be our category
-    const mainSectionsMatch = chunkContent.match(/MAIN SECTIONS: (.*)/);
+    const mainSectionsMatch = chunkContent.match(/MAIN SECTIONS: (.*?)\n/);
     if (!mainSectionsMatch) {
       throw new Error('Could not find MAIN SECTIONS in chunk content');
     }
