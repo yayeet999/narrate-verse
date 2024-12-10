@@ -2,10 +2,61 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { BLOG_LENGTHS } from '@/lib/constants';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const ReviewStep = ({ form, onBack, isGenerating }: { form: any; onBack: () => void; isGenerating: boolean }) => {
   const values = form.getValues();
   
+  const handleGenerateBlog = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        toast.error("You must be logged in to generate content");
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-blog`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ blogParams: values }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate blog content');
+      }
+
+      const { content } = await response.json();
+
+      // Save to Supabase
+      const { error: saveError } = await supabase
+        .from('content')
+        .insert([
+          {
+            title: `${values.type.replace(/_/g, ' ')} - Draft`,
+            content: content,
+            type: 'blog',
+            user_id: session.user.id,
+            is_published: false
+          }
+        ]);
+
+      if (saveError) throw saveError;
+      toast.success("Blog post generated and saved successfully!");
+
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate blog content');
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -78,7 +129,10 @@ export const ReviewStep = ({ form, onBack, isGenerating }: { form: any; onBack: 
 
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>Back</Button>
-        <Button type="submit" disabled={isGenerating}>
+        <Button 
+          onClick={handleGenerateBlog} 
+          disabled={isGenerating}
+        >
           {isGenerating ? (
             <>
               <div className="animate-spin mr-2">⚪</div>
