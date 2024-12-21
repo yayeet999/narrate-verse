@@ -43,7 +43,7 @@ const contentTypes = [
 
 const CreateContent = () => {
   const navigate = useNavigate();
-
+  
   const { data: userSubscription, isLoading } = useQuery({
     queryKey: ['userSubscription'],
     queryFn: async () => {
@@ -95,6 +95,8 @@ const CreateContent = () => {
       navigate('/dashboard/create/blog');
     } else if (contentType === 'story') {
       navigate('/dashboard/create/story');
+    } else if (contentType === 'novel') {
+      navigate('/dashboard/create/novel');
     }
   };
 
