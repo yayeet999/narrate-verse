@@ -1,6 +1,6 @@
 import { ValidationResult } from '../types';
 import { OutlineSection } from '../types/outline';
-import { TextAnalyzer } from './TextAnalyzer';
+import { TextAnalyzer, WritingStyle } from './TextAnalyzer';
 
 export class ChapterValidator {
   static async validateChapter(

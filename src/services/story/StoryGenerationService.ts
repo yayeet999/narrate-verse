@@ -82,15 +82,9 @@ export class StoryGenerationService {
       await this.storeGenerationData(sessionId, 'story_bible', storyBible);
 
       // 3. Generate Outline
-      const outlineGenerator = new OutlineGenerator(storyBible, settings);
-      let outline = await outlineGenerator.generateInitialOutline();
-      console.log('Initial outline generated');
-      
-      outline = await outlineGenerator.refineOutline(outline, 'first');
-      console.log('First outline refinement completed');
-      
-      outline = await outlineGenerator.refineOutline(outline, 'second');
-      console.log('Second outline refinement completed');
+      const outlineGenerator = new OutlineGenerator(settings);
+      const outline = await outlineGenerator.generateOutline();
+      console.log('Outline generated');
 
       // Store Outline
       await this.storeGenerationData(sessionId, 'outline', outline);

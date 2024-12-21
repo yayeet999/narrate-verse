@@ -48,7 +48,6 @@ const NovelBuffer = () => {
   });
 
   const handleContinue = () => {
-    // We'll implement the actual novel creation route later
     navigate('/dashboard/create/novel/setup');
   };
 
@@ -63,7 +62,7 @@ const NovelBuffer = () => {
   }
 
   // Check if user has premium access
-  const hasPremiumAccess = subscription?.subscription_tiers?.type === 'premium';
+  const hasPremiumAccess = subscription?.subscription_tiers?.type === 'paid';
 
   if (!hasPremiumAccess) {
     return (
