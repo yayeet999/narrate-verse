@@ -82,7 +82,7 @@ export class ChapterValidator {
   private static async validateStyle(chapter: string): Promise<ValidationResult> {
     try {
       const styleChecks = [
-        TextAnalyzer.checkWritingStyle(chapter, 'expectedStyle'),
+        TextAnalyzer.checkWritingStyle(chapter, 'standard' as WritingStyle),
         TextAnalyzer.checkDialogueStyle(chapter),
         TextAnalyzer.checkDescriptiveStyle(chapter),
         TextAnalyzer.checkVoiceConsistency(chapter)

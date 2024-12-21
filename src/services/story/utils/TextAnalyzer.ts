@@ -37,7 +37,7 @@ export class TextAnalyzer {
   static async analyzeDialogueRatio(chapter: string): Promise<number> {
     const dialogueMatches = chapter.match(/["'](?:\\.|[^"'\\])*["']/g) || [];
     const totalWords = this.countWords(chapter);
-    const dialogueWords = dialogueMatches.reduce((sum: number, match: string) => 
+    const dialogueWords = dialogueMatches.reduce((sum: number, match: string): number => 
       sum + this.countWords(match), 0
     );
     
