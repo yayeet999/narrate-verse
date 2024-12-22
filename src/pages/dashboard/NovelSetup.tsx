@@ -1,18 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { 
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { CoreStructureStep } from '@/components/novel/CoreStructureStep';
 import { GenreThemeStep } from '@/components/novel/GenreThemeStep';
 import { SettingWorldStep } from '@/components/novel/SettingWorldStep';
@@ -20,60 +8,14 @@ import { CharactersStep } from '@/components/novel/CharactersStep';
 import { NarrativeStyleStep } from '@/components/novel/NarrativeStyleStep';
 import { WritingStyleStep } from '@/components/novel/WritingStyleStep';
 import { TechnicalDetailsStep } from '@/components/novel/TechnicalDetailsStep';
-import type { NovelParameters } from '@/types/novel';
-
-type NovelSetupStep = 
-  | 'core-structure'
-  | 'genre-theme'
-  | 'setting-world'
-  | 'characters'
-  | 'narrative'
-  | 'writing-style'
-  | 'technical'
-  | 'content-controls'
-  | 'review';
-
-const STEPS: Record<NovelSetupStep, { title: string; description: string }> = {
-  'core-structure': {
-    title: 'Core Structure',
-    description: 'Define the basic structure of your novel'
-  },
-  'genre-theme': {
-    title: 'Genre & Theme',
-    description: 'Choose your genres and themes'
-  },
-  'setting-world': {
-    title: 'Setting & World',
-    description: 'Build your world'
-  },
-  'characters': {
-    title: 'Characters',
-    description: 'Create your cast of characters'
-  },
-  'narrative': {
-    title: 'Narrative Style',
-    description: 'Choose your storytelling approach'
-  },
-  'writing-style': {
-    title: 'Writing Style',
-    description: 'Define the tone and style'
-  },
-  'technical': {
-    title: 'Technical Details',
-    description: 'Set technical preferences'
-  },
-  'content-controls': {
-    title: 'Content Controls',
-    description: 'Set content guidelines'
-  },
-  'review': {
-    title: 'Review',
-    description: 'Review your choices'
-  }
-};
+import { ContentControlsStep } from '@/components/novel/ContentControlsStep';
+import { NovelSetupHeader } from '@/components/novel/NovelSetupHeader';
+import { NovelSetupProgress } from '@/components/novel/NovelSetupProgress';
+import { NovelSetupStepSelector } from '@/components/novel/NovelSetupStepSelector';
+import { NovelSetupNavigation } from '@/components/novel/NovelSetupNavigation';
+import type { NovelParameters, NovelSetupStep } from '@/types/novel';
 
 const NovelSetup = () => {
-  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<NovelSetupStep>('core-structure');
   
   const form = useForm<NovelParameters>({
@@ -149,6 +91,8 @@ const NovelSetup = () => {
         return <WritingStyleStep form={form} />;
       case 'technical':
         return <TechnicalDetailsStep form={form} />;
+      case 'content-controls':
+        return <ContentControlsStep form={form} />;
       default:
         return <div>Step {currentStep} is under construction</div>;
     }
@@ -156,86 +100,24 @@ const NovelSetup = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink onClick={() => navigate('/dashboard')}>
-                Dashboard
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbLink onClick={() => navigate('/dashboard/create')}>
-                Create
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbPage>Novel Setup</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-
-        <div className="mt-6 space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Novel Setup</h1>
-          <div className="flex space-x-2 text-sm text-muted-foreground overflow-x-auto pb-2">
-            {Object.entries(STEPS).map(([step, { title }], index) => (
-              <div key={step} className="flex items-center whitespace-nowrap">
-                <button
-                  onClick={() => handleStepClick(step as NovelSetupStep)}
-                  className={`hover:text-foreground ${
-                    currentStep === step ? 'text-foreground font-medium' : ''
-                  }`}
-                >
-                  {title}
-                </button>
-                {index < Object.entries(STEPS).length - 1 && (
-                  <ChevronRight className="h-4 w-4 mx-2 flex-shrink-0" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full mb-8">
-        <div className="flex justify-between mb-2">
-          <div className="text-sm font-medium">
-            {STEPS[currentStep].title}
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {currentStepIndex}/{totalSteps}
-          </div>
-        </div>
-        <Progress 
-          value={(currentStepIndex/totalSteps) * 100} 
-          className="h-2" 
-        />
-      </div>
+      <NovelSetupHeader />
+      
+      <NovelSetupProgress 
+        currentStep={currentStep}
+        currentStepIndex={currentStepIndex}
+        totalSteps={totalSteps}
+      />
 
       <Card className="p-6">
         <form onSubmit={(e) => e.preventDefault()}>
           {renderCurrentStep()}
           
-          <div className="flex justify-between mt-6">
-            <Button
-              variant="ghost"
-              onClick={handlePrevious}
-              disabled={currentStepIndex === 1}
-            >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Previous
-            </Button>
-            <Button onClick={handleNext}>
-              {currentStepIndex === totalSteps ? 'Complete' : 'Next'}
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
+          <NovelSetupNavigation
+            currentStepIndex={currentStepIndex}
+            totalSteps={totalSteps}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+          />
         </form>
       </Card>
     </div>

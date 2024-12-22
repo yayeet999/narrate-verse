@@ -115,3 +115,48 @@ export type NovelParameters = {
   // Additional Features
   storyDescription?: string;
 };
+
+export type NovelSetupStep = 
+  | 'core-structure'
+  | 'genre-theme'
+  | 'setting-world'
+  | 'characters'
+  | 'narrative'
+  | 'writing-style'
+  | 'technical'
+  | 'content-controls';
+
+export const STEPS: Record<NovelSetupStep, { title: string; description: string }> = {
+  'core-structure': {
+    title: 'Core Structure',
+    description: 'Define the basic structure of your novel'
+  },
+  'genre-theme': {
+    title: 'Genre & Theme',
+    description: 'Choose your genres and themes'
+  },
+  'setting-world': {
+    title: 'Setting & World',
+    description: 'Build your world'
+  },
+  'characters': {
+    title: 'Characters',
+    description: 'Create your cast of characters'
+  },
+  'narrative': {
+    title: 'Narrative Style',
+    description: 'Choose your storytelling approach'
+  },
+  'writing-style': {
+    title: 'Writing Style',
+    description: 'Define the tone and style'
+  },
+  'technical': {
+    title: 'Technical Details',
+    description: 'Set technical preferences'
+  },
+  'content-controls': {
+    title: 'Content Controls',
+    description: 'Set content guidelines'
+  }
+};
