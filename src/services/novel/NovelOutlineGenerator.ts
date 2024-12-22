@@ -38,7 +38,7 @@ export class NovelOutlineGenerator {
   private parameters: NovelParameters;
   private dimensions: ProcessedDimensions;
   private vectorResults: VectorChunk[];
-  private baseChapterCounts: Record<NovelLength, number> = {
+  private baseChapterCounts: Record<string, number> = {
     '50k-100k': 15,
     '100k-150k': 25,
     '150k+': 35
