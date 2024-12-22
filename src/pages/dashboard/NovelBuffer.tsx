@@ -61,10 +61,10 @@ const NovelBuffer = () => {
     );
   }
 
-  // Check if user has premium access
-  const hasPremiumAccess = subscription?.subscription_tiers?.type === 'paid';
+  // Check if user has paid access
+  const hasPaidAccess = subscription?.subscription_tiers?.type === 'paid';
 
-  if (!hasPremiumAccess) {
+  if (!hasPaidAccess) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Card className="p-6 space-y-4">
