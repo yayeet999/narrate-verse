@@ -688,6 +688,7 @@ serve(async (req) => {
   try {
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAiKey) {
+      console.error('OpenAI API key is not configured');
       throw new Error('OpenAI API key is not configured');
     }
 
@@ -695,11 +696,17 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase configuration is missing');
       throw new Error('Supabase configuration is missing');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     const { parameters, sessionId } = await req.json();
+    
+    if (!parameters || !sessionId) {
+      console.error('Missing required parameters:', { hasParameters: !!parameters, hasSessionId: !!sessionId });
+      throw new Error('Missing required parameters');
+    }
     
     console.log('Generating enhanced novel outline with parameters:', {
       sessionId,
@@ -716,6 +723,7 @@ serve(async (req) => {
     });
 
     // Generate base outline
+    console.log('Starting base outline generation...');
     const baseOutlineCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -734,10 +742,23 @@ serve(async (req) => {
       temperature: 0.7
     });
 
-    let baseOutline = JSON.parse(baseOutlineCompletion.choices[0].message.content);
-    console.log('Base outline generated successfully');
+    if (!baseOutlineCompletion.choices[0]?.message?.content) {
+      console.error('No content received from OpenAI for base outline');
+      throw new Error('Failed to generate base outline');
+    }
+
+    let baseOutline;
+    try {
+      baseOutline = JSON.parse(baseOutlineCompletion.choices[0].message.content);
+      console.log('Base outline generated successfully');
+    } catch (parseError) {
+      console.error('Failed to parse base outline:', parseError);
+      console.log('Raw content:', baseOutlineCompletion.choices[0].message.content);
+      throw new Error('Invalid base outline format');
+    }
 
     // Generate refinements
+    console.log('Starting refinements generation...');
     const refinementPrompt = `
     Analyze and enhance the following novel outline with deeper layers of:
     - Narrative intensification (tension points, pacing analysis)
@@ -770,8 +791,20 @@ serve(async (req) => {
       temperature: 0.7
     });
 
-    const refinements = JSON.parse(refinementCompletion.choices[0].message.content);
-    console.log('Refinements generated successfully');
+    if (!refinementCompletion.choices[0]?.message?.content) {
+      console.error('No content received from OpenAI for refinements');
+      throw new Error('Failed to generate refinements');
+    }
+
+    let refinements;
+    try {
+      refinements = JSON.parse(refinementCompletion.choices[0].message.content);
+      console.log('Refinements generated successfully');
+    } catch (parseError) {
+      console.error('Failed to parse refinements:', parseError);
+      console.log('Raw content:', refinementCompletion.choices[0].message.content);
+      throw new Error('Invalid refinements format');
+    }
 
     // Merge refinements into base outline
     const enhancedOutline = {
@@ -780,6 +813,7 @@ serve(async (req) => {
     };
 
     // Store the enhanced outline
+    console.log('Storing enhanced outline...');
     const { error: storeError } = await supabase
       .from('story_generation_data')
       .insert({
@@ -788,15 +822,22 @@ serve(async (req) => {
         content: JSON.stringify(enhancedOutline)
       });
 
-    if (storeError) throw storeError;
+    if (storeError) {
+      console.error('Failed to store outline:', storeError);
+      throw storeError;
+    }
 
     // Update session status
+    console.log('Updating session status...');
     const { error: updateError } = await supabase
       .from('story_generation_sessions')
       .update({ status: 'completed' })
       .eq('id', sessionId);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('Failed to update session status:', updateError);
+      throw updateError;
+    }
 
     console.log('Successfully stored enhanced outline and updated session status');
 
