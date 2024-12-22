@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { PARAMETER_REFERENCE } from '@/lib/novel/parameterReference';
+import { calculateDimensions } from '@/lib/novel/weightingSystem';
 
 interface NovelPreviewStepProps {
   form: UseFormReturn<NovelParameters>;
@@ -45,9 +47,17 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
 
       console.log('Created generation session:', generationSession.id);
 
-      // Trigger the edge function
+      // Calculate dimensions for enhanced parameters
+      const dimensions = calculateDimensions(values);
+
+      // Call the edge function with all necessary data
       const { error: functionError } = await supabase.functions.invoke('generate-novel-outline', {
-        body: { sessionId: generationSession.id }
+        body: { 
+          parameters: values,
+          parameterReference: PARAMETER_REFERENCE,
+          dimensions: dimensions,
+          sessionId: generationSession.id
+        }
       });
 
       if (functionError) throw functionError;

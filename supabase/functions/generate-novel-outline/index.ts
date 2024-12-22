@@ -2,195 +2,6 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import OpenAI from "https://deno.land/x/openai@v4.24.0/mod.ts";
-import { NovelParameters } from './types.ts';
-
-interface StoryDimensions {
-  complexity: number;
-  conflict: number;
-  emotionalDepth: number;
-  detail: number;
-  tone: number;
-  structuralExpansion: number;
-  pacing: number;
-  thematicResonance: number;
-  culturalCohesion: number;
-  characterChemistry: number;
-  genreAuthenticity: number;
-  narrativeMomentum: number;
-  worldIntegration: number;
-}
-
-function calculateDimensions(parameters: NovelParameters): StoryDimensions {
-  const dimensions: StoryDimensions = {
-    complexity: calculateComplexity(parameters),
-    conflict: calculateConflict(parameters),
-    emotionalDepth: parameters.emotionalIntensity * 0.5,
-    detail: (parameters.toneDescriptive + parameters.descriptionDensity) * 0.3,
-    tone: 1.5 + (parameters.toneFormality - 3) * 0.2,
-    structuralExpansion: calculateStructuralExpansion(parameters),
-    pacing: (parameters.pacingOverall + parameters.pacingVariance) * 0.3,
-    thematicResonance: calculateThematicResonance(parameters),
-    culturalCohesion: parameters.culturalDepth * 0.4,
-    characterChemistry: parameters.characters.length * 0.3,
-    genreAuthenticity: calculateGenreAuthenticity(parameters),
-    narrativeMomentum: (parameters.pacingOverall + parameters.emotionalIntensity) * 0.25,
-    worldIntegration: (parameters.worldComplexity + parameters.culturalDepth) * 0.3
-  };
-
-  return normalizeAndAdjustDimensions(dimensions, parameters);
-}
-
-function calculateComplexity(parameters: NovelParameters): number {
-  const base = 1.0;
-  const worldFactor = parameters.worldComplexity * 0.2;
-  const culturalFactor = parameters.culturalDepth * 0.15;
-  const genreBonus = parameters.primaryGenre === 'Hard Sci-Fi' ? 0.3 : 0;
-  return base + worldFactor + culturalFactor + genreBonus;
-}
-
-function calculateConflict(parameters: NovelParameters): number {
-  const base = 1.0;
-  const violenceFactor = parameters.violenceLevel * 0.3;
-  const conflictTypes = parameters.conflictTypes.length * 0.2;
-  return base + violenceFactor + conflictTypes;
-}
-
-function calculateStructuralExpansion(parameters: NovelParameters): number {
-  const lengthFactors: Record<string, number> = {
-    '50k-100k': 1.0,
-    '100k-150k': 1.5,
-    '150k+': 2.0
-  };
-  return lengthFactors[parameters.novelLength] || 1.0;
-}
-
-function calculateThematicResonance(parameters: NovelParameters): number {
-  const base = 1.0;
-  const themeMatches = checkThemeGenreMatch(parameters) ? 0.5 : 0;
-  return base + themeMatches;
-}
-
-function calculateGenreAuthenticity(parameters: NovelParameters): number {
-  const base = 1.0;
-  const genreBonus = checkGenreRequirements(parameters) ? 0.5 : 0;
-  return base + genreBonus;
-}
-
-function checkThemeGenreMatch(parameters: NovelParameters): boolean {
-  const genreThemes: Record<string, string[]> = {
-    'High Fantasy': ['Good vs Evil', 'Power and Corruption'],
-    'Detective': ['Identity', 'Redemption']
-  };
-  return genreThemes[parameters.primaryGenre]?.includes(parameters.primaryTheme) || false;
-}
-
-function checkGenreRequirements(parameters: NovelParameters): boolean {
-  switch (parameters.primaryGenre) {
-    case 'Hard Sci-Fi':
-      return parameters.worldComplexity >= 4;
-    case 'Epic Fantasy':
-      return parameters.worldComplexity >= 3 && parameters.culturalDepth >= 3;
-    default:
-      return true;
-  }
-}
-
-function normalizeAndAdjustDimensions(dimensions: StoryDimensions, parameters: NovelParameters): StoryDimensions {
-  Object.keys(dimensions).forEach(key => {
-    dimensions[key as keyof StoryDimensions] = Math.min(
-      dimensions[key as keyof StoryDimensions],
-      2.5
-    );
-  });
-
-  switch (parameters.primaryGenre) {
-    case 'High Fantasy':
-    case 'Epic Fantasy':
-      dimensions.complexity *= 1.2;
-      dimensions.worldIntegration *= 1.3;
-      break;
-    case 'Hard Sci-Fi':
-      dimensions.complexity *= 1.4;
-      dimensions.detail *= 1.3;
-      break;
-    case 'Detective':
-    case 'Noir':
-      dimensions.narrativeMomentum *= 1.2;
-      dimensions.conflict *= 1.1;
-      break;
-  }
-
-  Object.keys(dimensions).forEach(key => {
-    dimensions[key as keyof StoryDimensions] = Math.min(
-      dimensions[key as keyof StoryDimensions],
-      2.5
-    );
-  });
-
-  return dimensions;
-}
-
-function buildEnhancedSystemPrompt(parameters: NovelParameters, dimensions: StoryDimensions): string {
-  return `You are a professional novel outline generator. Using the provided parameters and calculated story dimensions, create a detailed chapter-by-chapter outline.
-
-Key Story Dimensions (use these to guide the outline's depth and focus):
-- Complexity: ${dimensions.complexity} (affects subplot density and world detail)
-- Conflict: ${dimensions.conflict} (shapes tension and confrontation frequency)
-- Emotional Depth: ${dimensions.emotionalDepth} (guides character development)
-- Detail: ${dimensions.detail} (determines descriptive richness)
-- Pacing: ${dimensions.pacing} (influences chapter length and scene transitions)
-- Thematic Resonance: ${dimensions.thematicResonance} (ensures theme integration)
-- World Integration: ${dimensions.worldIntegration} (embeds setting into plot)
-
-Novel Parameters to strictly follow:
-- Genre: ${parameters.primaryGenre}${parameters.secondaryGenre ? ` with ${parameters.secondaryGenre} elements` : ''}
-- Theme: ${parameters.primaryTheme}${parameters.secondaryTheme ? ` and ${parameters.secondaryTheme}` : ''}
-- Setting: ${parameters.settingType}
-- Cultural Framework: ${parameters.culturalFramework}
-- POV: ${parameters.pov}
-- Story Structure: ${parameters.storyStructure}
-- Resolution Style: ${parameters.resolutionStyle}
-
-Content Guidelines:
-- Violence Level: ${parameters.violenceLevel}/5
-- Adult Content: ${parameters.adultContentLevel}/5
-- Profanity: ${parameters.profanityLevel}/5
-- Controversial Content: ${parameters.controversialHandling}
-
-Writing Style:
-- Formality: ${parameters.toneFormality}/5
-- Description Density: ${parameters.descriptionDensity}/5
-- Dialogue Balance: ${parameters.dialogueBalance}/5
-- Pacing: ${parameters.pacingOverall}/5
-- Emotional Intensity: ${parameters.emotionalIntensity}/5
-
-Generate a detailed novel outline following these exact specifications. Each chapter should include a title, summary, and key scenes. Maintain consistency with the genre conventions and thematic elements throughout the outline.`;
-}
-
-function validateOutlineStructure(outline: any): boolean {
-  try {
-    // Validate outline structure
-    if (!outline.chapters || !Array.isArray(outline.chapters)) return false;
-    if (!outline.metadata) return false;
-
-    for (const chapter of outline.chapters) {
-      if (!chapter.chapterNumber || !chapter.title || !chapter.summary) return false;
-      if (!chapter.scenes || !Array.isArray(chapter.scenes)) return false;
-
-      for (const scene of chapter.scenes) {
-        if (!scene.id || !scene.sceneFocus || !scene.conflict || !scene.settingDetails) return false;
-        if (!scene.characterInvolvement || !Array.isArray(scene.characterInvolvement)) return false;
-      }
-    }
-
-    if (!outline.metadata.totalEstimatedWordCount || !outline.metadata.mainTheme) return false;
-
-    return true;
-  } catch (error) {
-    console.error('Validation error:', error);
-    return false;
-  }
-}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -208,7 +19,8 @@ serve(async (req) => {
       throw new Error('OpenAI API key is not configured');
     }
 
-    const { sessionId } = await req.json();
+    const { parameters, parameterReference, dimensions, sessionId } = await req.json();
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -217,21 +29,23 @@ serve(async (req) => {
       apiKey: openAiKey,
     });
 
-    const { data: session, error: sessionError } = await supabase
-      .from('story_generation_sessions')
-      .select('parameters, user_id')
-      .eq('id', sessionId)
-      .single();
+    const systemPrompt = `You are a professional novel outline generator. Using the provided parameters, reference guide, and calculated story dimensions, create a detailed chapter-by-chapter outline.
 
-    if (sessionError) throw sessionError;
-    if (!session) throw new Error('Session not found');
+PARAMETER REFERENCE GUIDE:
+${JSON.stringify(parameterReference, null, 2)}
 
-    const dimensions = calculateDimensions(session.parameters);
-    const systemPrompt = buildEnhancedSystemPrompt(session.parameters, dimensions);
-    const userPrompt = `Generate a detailed novel outline following these parameters:
-${JSON.stringify(session.parameters, null, 2)}
+STORY DIMENSIONS:
+${JSON.stringify(dimensions, null, 2)}
 
-Required JSON Structure:
+USER PARAMETERS:
+${JSON.stringify(parameters, null, 2)}
+
+INSTRUCTIONS:
+1. Use the parameter reference guide to understand the full impact and meaning of each parameter
+2. Use the story dimensions to guide the depth and focus of different aspects
+3. Create a detailed outline that strictly adheres to the user's chosen parameters
+4. Ensure the outline maintains consistency with genre conventions and thematic elements
+5. Generate an outline that follows this exact JSON structure:
 {
   "chapters": [{
     "chapterNumber": number,
@@ -252,8 +66,10 @@ Required JSON Structure:
   }
 }`;
 
+    const userPrompt = "Generate a detailed novel outline following the provided parameters and guidelines.";
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -276,10 +92,7 @@ Required JSON Structure:
       throw new Error(`Failed to parse outline JSON: ${parseError.message}`);
     }
 
-    if (!validateOutlineStructure(outline)) {
-      throw new Error('Generated outline does not match required structure');
-    }
-
+    // Store the generated outline
     const { error: storeError } = await supabase
       .from('story_generation_data')
       .insert({
@@ -290,6 +103,7 @@ Required JSON Structure:
 
     if (storeError) throw storeError;
 
+    // Update session status
     const { error: updateError } = await supabase
       .from('story_generation_sessions')
       .update({ status: 'completed' })
@@ -303,6 +117,7 @@ Required JSON Structure:
     );
 
   } catch (error) {
+    console.error('Error in generate-novel-outline function:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
       details: error.stack
