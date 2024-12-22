@@ -45,6 +45,36 @@ export type Database = {
         }
         Relationships: []
       }
+      novel_parameter_references: {
+        Row: {
+          category: Database["public"]["Enums"]["novel_parameter_category"]
+          created_at: string
+          description: string
+          embedding: string | null
+          id: string
+          parameter_key: string
+          weight: number
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["novel_parameter_category"]
+          created_at?: string
+          description: string
+          embedding?: string | null
+          id?: string
+          parameter_key: string
+          weight?: number
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["novel_parameter_category"]
+          created_at?: string
+          description?: string
+          embedding?: string | null
+          id?: string
+          parameter_key?: string
+          weight?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -369,6 +399,21 @@ export type Database = {
             }
             Returns: unknown
           }
+      match_novel_parameters: {
+        Args: {
+          query_embedding: string
+          match_threshold: number
+          match_count: number
+        }
+        Returns: {
+          id: string
+          category: Database["public"]["Enums"]["novel_parameter_category"]
+          parameter_key: string
+          description: string
+          weight: number
+          similarity: number
+        }[]
+      }
       match_story_chunks: {
         Args: {
           query_embedding: string
@@ -450,6 +495,14 @@ export type Database = {
         | "story_bible"
         | "chapter"
         | "outline"
+      novel_parameter_category:
+        | "genre_conventions"
+        | "narrative_structure"
+        | "character_development"
+        | "world_building"
+        | "pacing_guidelines"
+        | "thematic_elements"
+        | "style_guidelines"
       story_chunk_type: "writing_style" | "genre_guide" | "character_guide"
       story_generation_status: "in_progress" | "completed" | "failed"
       story_validation_status:

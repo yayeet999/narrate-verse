@@ -8,78 +8,67 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Organize reference chunks by category and relevance
-function organizeReferenceChunks(chunks: any[]) {
+// Organize reference parameters by category and weight
+function organizeParameters(parameters: any[]) {
   const categories = {
     genre_conventions: [] as any[],
-    plot_structures: [] as any[],
+    narrative_structure: [] as any[],
     character_development: [] as any[],
     world_building: [] as any[],
+    pacing_guidelines: [] as any[],
     thematic_elements: [] as any[],
-    technical_guidelines: [] as any[],
-    other: [] as any[],
+    style_guidelines: [] as any[],
   };
 
-  chunks.forEach(chunk => {
-    const category = chunk.category?.toLowerCase().replace(/[^a-z_]/g, '_') || 'other';
-    const relevanceScore = chunk.similarity || 0;
-    
-    // Only include chunks with good relevance
-    if (relevanceScore >= 0.7) {
-      if (categories[category]) {
-        categories[category].push({
-          content: chunk.content,
-          relevance: relevanceScore
-        });
-      } else {
-        categories.other.push({
-          content: chunk.content,
-          relevance: relevanceScore
-        });
-      }
+  parameters.forEach(param => {
+    if (categories[param.category]) {
+      categories[param.category].push({
+        description: param.description,
+        weight: param.weight,
+        similarity: param.similarity
+      });
     }
   });
 
-  // Sort each category by relevance
+  // Sort each category by weighted similarity
   Object.keys(categories).forEach(key => {
-    categories[key].sort((a, b) => b.relevance - a.relevance);
+    categories[key].sort((a, b) => (b.weight * b.similarity) - (a.weight * a.similarity));
   });
 
   return categories;
 }
 
-// Build enhanced system prompt using reference materials
-function buildSystemPrompt(parameters: any, referenceChunks: any) {
-  const genreGuidelines = referenceChunks.genre_conventions
-    .map(c => c.content)
+function buildSystemPrompt(parameters: any, referenceParams: any) {
+  const genreGuidelines = referenceParams.genre_conventions
+    .map(p => `${p.description} (Weight: ${p.weight})`)
     .slice(0, 3)
     .join('\n');
 
-  const plotStructures = referenceChunks.plot_structures
-    .map(c => c.content)
+  const narrativeGuidelines = referenceParams.narrative_structure
+    .map(p => `${p.description} (Weight: ${p.weight})`)
     .slice(0, 3)
     .join('\n');
 
-  const characterGuidelines = referenceChunks.character_development
-    .map(c => c.content)
+  const characterGuidelines = referenceParams.character_development
+    .map(p => `${p.description} (Weight: ${p.weight})`)
     .slice(0, 3)
     .join('\n');
 
   return `You are a professional novel outline generator specializing in ${parameters.primaryGenre} stories.
 
-CONTEXT AND GUIDELINES:
-Genre Conventions:
+WEIGHTED GUIDELINES:
+Genre Guidelines (High Priority):
 ${genreGuidelines}
 
-Plot Structure Guidelines:
-${plotStructures}
+Narrative Structure Guidelines:
+${narrativeGuidelines}
 
 Character Development Guidelines:
 ${characterGuidelines}
 
 STRICT REQUIREMENTS:
 1. Maintain absolute consistency with user parameters
-2. Follow genre conventions while allowing for innovation
+2. Follow weighted genre conventions while allowing for innovation
 3. Ensure character arcs align with provided archetypes
 4. Balance pacing according to specified preferences
 5. Incorporate thematic elements throughout the outline
@@ -89,7 +78,40 @@ TECHNICAL REQUIREMENTS:
 1. Return ONLY a valid JSON object
 2. No markdown or additional text
 3. Must be parseable by JSON.parse()
-4. Follow exact structure:
+4. Follow exact structure specified in the user prompt`;
+}
+
+function buildUserPrompt(parameters: any, referenceParams: any) {
+  const worldBuildingGuidelines = referenceParams.world_building
+    .map(p => `${p.description} (Weight: ${p.weight})`)
+    .slice(0, 2)
+    .join('\n');
+
+  const thematicGuidelines = referenceParams.thematic_elements
+    .map(p => `${p.description} (Weight: ${p.weight})`)
+    .slice(0, 2)
+    .join('\n');
+
+  const styleGuidelines = referenceParams.style_guidelines
+    .map(p => `${p.description} (Weight: ${p.weight})`)
+    .slice(0, 2)
+    .join('\n');
+
+  return `Generate a detailed novel outline following these weighted parameters:
+
+NOVEL PARAMETERS:
+${JSON.stringify(parameters, null, 2)}
+
+WEIGHTED WORLD-BUILDING GUIDELINES:
+${worldBuildingGuidelines}
+
+WEIGHTED THEMATIC GUIDELINES:
+${thematicGuidelines}
+
+WEIGHTED STYLE GUIDELINES:
+${styleGuidelines}
+
+Required JSON Structure:
 {
   "chapters": [{
     "chapterNumber": number,
@@ -110,57 +132,7 @@ TECHNICAL REQUIREMENTS:
   }
 }
 
-IMPORTANT GUIDELINES:
-- Each chapter should advance both plot and character development
-- Maintain consistent tone and style throughout
-- Ensure proper setup and payoff for major plot points
-- Balance dialogue, action, and description based on user preferences
-- Incorporate world-building elements naturally into scenes
-- Ensure conflicts escalate properly throughout the outline`;
-}
-
-// Build user prompt incorporating parameters and reference materials
-function buildUserPrompt(parameters: any, referenceChunks: any) {
-  const worldBuildingGuidelines = referenceChunks.world_building
-    .map(c => c.content)
-    .slice(0, 2)
-    .join('\n');
-
-  const thematicGuidelines = referenceChunks.thematic_elements
-    .map(c => c.content)
-    .slice(0, 2)
-    .join('\n');
-
-  const technicalGuidelines = referenceChunks.technical_guidelines
-    .map(c => c.content)
-    .slice(0, 2)
-    .join('\n');
-
-  return `Generate a detailed novel outline following these specifications:
-
-NOVEL PARAMETERS:
-${JSON.stringify(parameters, null, 2)}
-
-WORLD-BUILDING CONSIDERATIONS:
-${worldBuildingGuidelines}
-
-THEMATIC GUIDELINES:
-${thematicGuidelines}
-
-TECHNICAL SPECIFICATIONS:
-${technicalGuidelines}
-
-Additional Reference Materials:
-${referenceChunks.other.map(c => c.content).join('\n')}
-
-Remember:
-1. Strictly adhere to the provided JSON structure
-2. Ensure all character arcs are fully developed
-3. Maintain consistent pacing and tone
-4. Balance exposition and action
-5. Incorporate thematic elements naturally
-
-Return ONLY valid JSON with no additional text or formatting.`;
+Remember to incorporate the weighted guidelines according to their importance scores.`;
 }
 
 function validateOutlineStructure(outline: any): boolean {
@@ -202,7 +174,7 @@ serve(async (req) => {
     
     if (!openAiKey) {
       console.error('OpenAI API key is not set');
-      throw new Error('OpenAI API key is not configured. Please set it in the Supabase dashboard.');
+      throw new Error('OpenAI API key is not configured');
     }
 
     const { sessionId } = await req.json();
@@ -237,42 +209,42 @@ serve(async (req) => {
 
     console.log('Retrieved session parameters:', session.parameters);
 
-    // Generate embedding for vector search
-    console.log('Generating embedding for vector search...');
+    // Generate embedding for parameter matching
+    console.log('Generating embedding for parameter matching...');
     const embeddingResponse = await openai.embeddings.create({
       model: "text-embedding-ada-002",
       input: JSON.stringify(session.parameters),
     });
 
     const embedding = embeddingResponse.data[0].embedding;
-    console.log('Generated embedding for vector search');
+    console.log('Generated embedding for parameter matching');
 
-    // Search for relevant reference chunks
-    console.log('Searching for reference chunks...');
-    const { data: chunks, error: searchError } = await supabase.rpc('match_story_chunks', {
+    // Match novel parameters using the new function
+    console.log('Matching novel parameters...');
+    const { data: matchedParams, error: matchError } = await supabase.rpc('match_novel_parameters', {
       query_embedding: embedding,
       match_threshold: 0.7,
-      match_count: 15 // Increased from 10 to get more relevant chunks
+      match_count: 20
     });
 
-    if (searchError) {
-      console.error('Error searching for reference chunks:', searchError);
-      throw searchError;
+    if (matchError) {
+      console.error('Error matching parameters:', matchError);
+      throw matchError;
     }
 
-    console.log('Found matching reference chunks:', chunks.length);
-    chunks.forEach((chunk, index) => {
-      console.log(`Chunk ${index + 1} relevance score:`, chunk.similarity);
-      console.log(`Chunk ${index + 1} category:`, chunk.category);
+    console.log('Found matching parameters:', matchedParams.length);
+    matchedParams.forEach((param, index) => {
+      console.log(`Parameter ${index + 1} weight:`, param.weight);
+      console.log(`Parameter ${index + 1} similarity:`, param.similarity);
     });
 
-    // Organize and process reference chunks
-    const organizedChunks = organizeReferenceChunks(chunks);
-    console.log('Organized chunks by category:', Object.keys(organizedChunks));
+    // Organize and process parameters
+    const organizedParams = organizeParameters(matchedParams);
+    console.log('Organized parameters by category:', Object.keys(organizedParams));
 
-    // Build enhanced prompts
-    const systemPrompt = buildSystemPrompt(session.parameters, organizedChunks);
-    const userPrompt = buildUserPrompt(session.parameters, organizedChunks);
+    // Build enhanced prompts with weighted parameters
+    const systemPrompt = buildSystemPrompt(session.parameters, organizedParams);
+    const userPrompt = buildUserPrompt(session.parameters, organizedParams);
 
     console.log('Sending request to OpenAI...');
     const completion = await openai.chat.completions.create({
