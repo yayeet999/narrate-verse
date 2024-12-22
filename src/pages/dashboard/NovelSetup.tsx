@@ -19,6 +19,7 @@ import { SettingWorldStep } from '@/components/novel/SettingWorldStep';
 import { CharactersStep } from '@/components/novel/CharactersStep';
 import { NarrativeStyleStep } from '@/components/novel/NarrativeStyleStep';
 import { WritingStyleStep } from '@/components/novel/WritingStyleStep';
+import { TechnicalDetailsStep } from '@/components/novel/TechnicalDetailsStep';
 import type { NovelParameters } from '@/types/novel';
 
 type NovelSetupStep = 
@@ -146,6 +147,8 @@ const NovelSetup = () => {
         return <NarrativeStyleStep form={form} />;
       case 'writing-style':
         return <WritingStyleStep form={form} />;
+      case 'technical':
+        return <TechnicalDetailsStep form={form} />;
       default:
         return <div>Step {currentStep} is under construction</div>;
     }
