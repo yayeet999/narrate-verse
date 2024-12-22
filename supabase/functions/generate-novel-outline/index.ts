@@ -8,63 +8,73 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Organize reference parameters by category and weight
-function organizeParameters(parameters: any[]) {
-  const categories = {
-    genre_conventions: [] as any[],
-    narrative_structure: [] as any[],
-    character_development: [] as any[],
-    world_building: [] as any[],
-    pacing_guidelines: [] as any[],
-    thematic_elements: [] as any[],
-    style_guidelines: [] as any[],
+function processMatchedParameters(parameters: any[]) {
+  const categorizedParams = {
+    genre: [] as any[],
+    theme: [] as any[],
+    structure: [] as any[],
+    style: [] as any[],
+    technical: [] as any[],
+    content: [] as any[],
   };
 
   parameters.forEach(param => {
-    if (categories[param.category]) {
-      categories[param.category].push({
-        description: param.description,
-        weight: param.weight,
-        similarity: param.similarity
-      });
+    const weight = param.weight * param.similarity;
+    const weightedDescription = `${param.description} (Impact: ${weight.toFixed(2)})`;
+    
+    switch (param.category) {
+      case 'genre_conventions':
+        categorizedParams.genre.push(weightedDescription);
+        break;
+      case 'thematic_elements':
+        categorizedParams.theme.push(weightedDescription);
+        break;
+      case 'narrative_structure':
+        categorizedParams.structure.push(weightedDescription);
+        break;
+      case 'writing_style':
+        categorizedParams.style.push(weightedDescription);
+        break;
+      case 'technical_requirements':
+        categorizedParams.technical.push(weightedDescription);
+        break;
+      case 'content_controls':
+        categorizedParams.content.push(weightedDescription);
+        break;
     }
   });
 
-  // Sort each category by weighted similarity
-  Object.keys(categories).forEach(key => {
-    categories[key].sort((a, b) => (b.weight * b.similarity) - (a.weight * a.similarity));
-  });
-
-  return categories;
+  return categorizedParams;
 }
 
-function buildSystemPrompt(parameters: any, referenceParams: any) {
-  const genreGuidelines = referenceParams.genre_conventions
-    .map(p => `${p.description} (Weight: ${p.weight})`)
-    .slice(0, 3)
-    .join('\n');
-
-  const narrativeGuidelines = referenceParams.narrative_structure
-    .map(p => `${p.description} (Weight: ${p.weight})`)
-    .slice(0, 3)
-    .join('\n');
-
-  const characterGuidelines = referenceParams.character_development
-    .map(p => `${p.description} (Weight: ${p.weight})`)
-    .slice(0, 3)
-    .join('\n');
-
+function buildEnhancedSystemPrompt(parameters: any, matchedParams: any) {
   return `You are a professional novel outline generator specializing in ${parameters.primaryGenre} stories.
 
-WEIGHTED GUIDELINES:
-Genre Guidelines (High Priority):
-${genreGuidelines}
+WEIGHTED PARAMETER GUIDELINES:
+Genre Conventions (High Priority):
+${matchedParams.genre.join('\n')}
 
-Narrative Structure Guidelines:
-${narrativeGuidelines}
+Thematic Elements:
+${matchedParams.theme.join('\n')}
 
-Character Development Guidelines:
-${characterGuidelines}
+Narrative Structure:
+${matchedParams.structure.join('\n')}
+
+Writing Style:
+${matchedParams.style.join('\n')}
+
+Technical Requirements:
+${matchedParams.technical.join('\n')}
+
+Content Controls:
+${matchedParams.content.join('\n')}
+
+STORY DIMENSIONS TO CONSIDER:
+1. Complexity: ${calculateComplexityGuidance(parameters)}
+2. Conflict: ${calculateConflictGuidance(parameters)}
+3. Emotional Depth: ${calculateEmotionalDepthGuidance(parameters)}
+4. World Integration: ${calculateWorldIntegrationGuidance(parameters)}
+5. Pacing: ${calculatePacingGuidance(parameters)}
 
 STRICT REQUIREMENTS:
 1. Maintain absolute consistency with user parameters
@@ -72,7 +82,7 @@ STRICT REQUIREMENTS:
 3. Ensure character arcs align with provided archetypes
 4. Balance pacing according to specified preferences
 5. Incorporate thematic elements throughout the outline
-6. Respect content control parameters (violence, adult content, etc.)
+6. Respect content control parameters
 
 TECHNICAL REQUIREMENTS:
 1. Return ONLY a valid JSON object
@@ -81,79 +91,52 @@ TECHNICAL REQUIREMENTS:
 4. Follow exact structure specified in the user prompt`;
 }
 
-function buildUserPrompt(parameters: any, referenceParams: any) {
-  const worldBuildingGuidelines = referenceParams.world_building
-    .map(p => `${p.description} (Weight: ${p.weight})`)
-    .slice(0, 2)
-    .join('\n');
-
-  const thematicGuidelines = referenceParams.thematic_elements
-    .map(p => `${p.description} (Weight: ${p.weight})`)
-    .slice(0, 2)
-    .join('\n');
-
-  const styleGuidelines = referenceParams.style_guidelines
-    .map(p => `${p.description} (Weight: ${p.weight})`)
-    .slice(0, 2)
-    .join('\n');
-
-  return `Generate a detailed novel outline following these weighted parameters:
-
-NOVEL PARAMETERS:
-${JSON.stringify(parameters, null, 2)}
-
-WEIGHTED WORLD-BUILDING GUIDELINES:
-${worldBuildingGuidelines}
-
-WEIGHTED THEMATIC GUIDELINES:
-${thematicGuidelines}
-
-WEIGHTED STYLE GUIDELINES:
-${styleGuidelines}
-
-Required JSON Structure:
-{
-  "chapters": [{
-    "chapterNumber": number,
-    "title": string,
-    "summary": string,
-    "scenes": [{
-      "id": string,
-      "sceneFocus": string,
-      "conflict": string,
-      "settingDetails": string,
-      "characterInvolvement": string[]
-    }]
-  }],
-  "metadata": {
-    "totalEstimatedWordCount": number,
-    "mainTheme": string,
-    "creationTimestamp": string
-  }
+function calculateComplexityGuidance(parameters: any): string {
+  const base = 1.0;
+  const worldFactor = parameters.worldComplexity * 0.2;
+  const culturalFactor = parameters.culturalDepth * 0.15;
+  const complexity = Math.min(base + worldFactor + culturalFactor, 2.5);
+  return `Target level ${complexity.toFixed(1)}/2.5 - Adjust subplot density and world-building detail accordingly`;
 }
 
-Remember to incorporate the weighted guidelines according to their importance scores.`;
+function calculateConflictGuidance(parameters: any): string {
+  const base = 1.0;
+  const violenceFactor = parameters.violenceLevel * 0.3;
+  const conflictTypes = parameters.conflictTypes.length * 0.2;
+  const conflict = Math.min(base + violenceFactor + conflictTypes, 2.5);
+  return `Target level ${conflict.toFixed(1)}/2.5 - Balance internal and external conflicts`;
+}
+
+function calculateEmotionalDepthGuidance(parameters: any): string {
+  const depth = parameters.emotionalIntensity * 0.5;
+  return `Target level ${depth.toFixed(1)}/2.5 - Focus on character emotional development`;
+}
+
+function calculateWorldIntegrationGuidance(parameters: any): string {
+  const integration = (parameters.worldComplexity + parameters.culturalDepth) * 0.3;
+  return `Target level ${integration.toFixed(1)}/2.5 - Weave setting elements into plot`;
+}
+
+function calculatePacingGuidance(parameters: any): string {
+  const pacing = (parameters.pacingOverall + parameters.pacingVariance) * 0.3;
+  return `Target level ${pacing.toFixed(1)}/2.5 - Adjust scene and chapter rhythm`;
 }
 
 function validateOutlineStructure(outline: any): boolean {
   try {
-    // Check basic structure
     if (!outline.chapters || !Array.isArray(outline.chapters)) return false;
     if (!outline.metadata) return false;
 
-    // Validate each chapter
     for (const chapter of outline.chapters) {
       if (!chapter.chapterNumber || !chapter.title || !chapter.summary) return false;
       if (!chapter.scenes || !Array.isArray(chapter.scenes)) return false;
 
-      // Validate each scene
       for (const scene of chapter.scenes) {
         if (!scene.id || !scene.sceneFocus || !scene.conflict || !scene.settingDetails) return false;
         if (!scene.characterInvolvement || !Array.isArray(scene.characterInvolvement)) return false;
       }
     }
 
-    // Validate metadata
     if (!outline.metadata.totalEstimatedWordCount || !outline.metadata.mainTheme) return false;
 
     return true;
@@ -180,7 +163,6 @@ serve(async (req) => {
     const { sessionId } = await req.json();
     console.log('Processing novel generation for session:', sessionId);
 
-    // Initialize clients
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -190,7 +172,6 @@ serve(async (req) => {
       apiKey: openAiKey,
     });
 
-    // Get session data
     console.log('Fetching session data...');
     const { data: session, error: sessionError } = await supabase
       .from('story_generation_sessions')
@@ -198,18 +179,11 @@ serve(async (req) => {
       .eq('id', sessionId)
       .single();
 
-    if (sessionError) {
-      console.error('Error fetching session:', sessionError);
-      throw sessionError;
-    }
-    
-    if (!session) {
-      throw new Error('Session not found');
-    }
+    if (sessionError) throw sessionError;
+    if (!session) throw new Error('Session not found');
 
     console.log('Retrieved session parameters:', session.parameters);
 
-    // Generate embedding for parameter matching
     console.log('Generating embedding for parameter matching...');
     const embeddingResponse = await openai.embeddings.create({
       model: "text-embedding-ada-002",
@@ -219,7 +193,6 @@ serve(async (req) => {
     const embedding = embeddingResponse.data[0].embedding;
     console.log('Generated embedding for parameter matching');
 
-    // Match novel parameters using the new function
     console.log('Matching novel parameters...');
     const { data: matchedParams, error: matchError } = await supabase.rpc('match_novel_parameters', {
       query_embedding: embedding,
@@ -227,24 +200,37 @@ serve(async (req) => {
       match_count: 20
     });
 
-    if (matchError) {
-      console.error('Error matching parameters:', matchError);
-      throw matchError;
-    }
+    if (matchError) throw matchError;
 
     console.log('Found matching parameters:', matchedParams.length);
-    matchedParams.forEach((param, index) => {
-      console.log(`Parameter ${index + 1} weight:`, param.weight);
-      console.log(`Parameter ${index + 1} similarity:`, param.similarity);
-    });
+    
+    const processedParams = processMatchedParameters(matchedParams);
+    console.log('Processed and categorized parameters');
 
-    // Organize and process parameters
-    const organizedParams = organizeParameters(matchedParams);
-    console.log('Organized parameters by category:', Object.keys(organizedParams));
+    const systemPrompt = buildEnhancedSystemPrompt(session.parameters, processedParams);
+    const userPrompt = `Generate a detailed novel outline following these parameters:
+${JSON.stringify(session.parameters, null, 2)}
 
-    // Build enhanced prompts with weighted parameters
-    const systemPrompt = buildSystemPrompt(session.parameters, organizedParams);
-    const userPrompt = buildUserPrompt(session.parameters, organizedParams);
+Required JSON Structure:
+{
+  "chapters": [{
+    "chapterNumber": number,
+    "title": string,
+    "summary": string,
+    "scenes": [{
+      "id": string,
+      "sceneFocus": string,
+      "conflict": string,
+      "settingDetails": string,
+      "characterInvolvement": string[]
+    }]
+  }],
+  "metadata": {
+    "totalEstimatedWordCount": number,
+    "mainTheme": string,
+    "creationTimestamp": string
+  }
+}`;
 
     console.log('Sending request to OpenAI...');
     const completion = await openai.chat.completions.create({
@@ -281,7 +267,6 @@ serve(async (req) => {
       throw new Error('Generated outline does not match required structure');
     }
 
-    // Store the generated outline
     console.log('Storing generated outline...');
     const { error: storeError } = await supabase
       .from('story_generation_data')
@@ -296,7 +281,6 @@ serve(async (req) => {
       throw storeError;
     }
 
-    // Update session status
     console.log('Updating session status...');
     const { error: updateError } = await supabase
       .from('story_generation_sessions')
