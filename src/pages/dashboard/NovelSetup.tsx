@@ -13,7 +13,8 @@ import { NovelSetupHeader } from '@/components/novel/NovelSetupHeader';
 import { NovelSetupProgress } from '@/components/novel/NovelSetupProgress';
 import { NovelSetupStepSelector } from '@/components/novel/NovelSetupStepSelector';
 import { NovelSetupNavigation } from '@/components/novel/NovelSetupNavigation';
-import type { NovelParameters, NovelSetupStep, STEPS } from '@/types/novel';
+import type { NovelParameters, NovelSetupStep } from '@/types/novel';
+import { STEPS } from '@/types/novel';
 
 const NovelSetup = () => {
   const [currentStep, setCurrentStep] = useState<NovelSetupStep>('core-structure');
