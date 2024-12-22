@@ -33,7 +33,7 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
         .insert({
           user_id: session.user.id,
           parameters: values,
-          status: 'in_progress' // Changed from 'pending' to 'in_progress'
+          status: 'in_progress'
         });
 
       if (error) throw error;
@@ -58,14 +58,41 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
       </div>
 
       <div className="grid gap-4">
-        {Object.entries(values).map(([key, value]) => (
-          <Card key={key} className="p-4">
-            <div className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}</div>
-            <div className="text-sm text-muted-foreground">
-              {Array.isArray(value) ? value.join(', ') : value?.toString()}
+        <Card className="p-4">
+          <h3 className="font-medium mb-2">Basic Information</h3>
+          <div className="space-y-2">
+            <div>
+              <span className="text-muted-foreground">Title:</span>
+              <p>{values.title}</p>
             </div>
-          </Card>
-        ))}
+            {values.storyDescription && (
+              <div>
+                <span className="text-muted-foreground">Story Description:</span>
+                <p className="whitespace-pre-wrap">{values.storyDescription}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-medium mb-2">Novel Length</h3>
+          <p>{values.novelLength}</p>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-medium mb-2">Chapter Structure</h3>
+          <p>{values.chapterStructure}</p>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-medium mb-2">Average Chapter Length</h3>
+          <p>{values.averageChapterLength} words</p>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-medium mb-2">Chapter Naming Style</h3>
+          <p>{values.chapterNamingStyle}</p>
+        </Card>
       </div>
 
       <div className="flex justify-between pt-6">
