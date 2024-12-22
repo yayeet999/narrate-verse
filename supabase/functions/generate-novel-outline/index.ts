@@ -167,6 +167,31 @@ Writing Style:
 Generate a detailed novel outline following these exact specifications. Each chapter should include a title, summary, and key scenes. Maintain consistency with the genre conventions and thematic elements throughout the outline.`;
 }
 
+function validateOutlineStructure(outline: any): boolean {
+  try {
+    // Validate outline structure
+    if (!outline.chapters || !Array.isArray(outline.chapters)) return false;
+    if (!outline.metadata) return false;
+
+    for (const chapter of outline.chapters) {
+      if (!chapter.chapterNumber || !chapter.title || !chapter.summary) return false;
+      if (!chapter.scenes || !Array.isArray(chapter.scenes)) return false;
+
+      for (const scene of chapter.scenes) {
+        if (!scene.id || !scene.sceneFocus || !scene.conflict || !scene.settingDetails) return false;
+        if (!scene.characterInvolvement || !Array.isArray(scene.characterInvolvement)) return false;
+      }
+    }
+
+    if (!outline.metadata.totalEstimatedWordCount || !outline.metadata.mainTheme) return false;
+
+    return true;
+  } catch (error) {
+    console.error('Validation error:', error);
+    return false;
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -228,7 +253,7 @@ Required JSON Structure:
 }`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
