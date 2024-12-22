@@ -35,9 +35,8 @@ serve(async (req) => {
       apiKey: openAiKey,
     });
 
-    // Replace the parameters placeholder in the prompt template
     const systemPrompt = NOVEL_GENERATION_PROMPT.replace(
-      '${JSON.stringify(parameters, null, 2)}',
+      '\${JSON.stringify(parameters, null, 2)}',
       JSON.stringify(parameters, null, 2)
     );
 
