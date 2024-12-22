@@ -22,6 +22,31 @@ export async function searchNovelParameters(
 ): Promise<MatchedParameter[]> {
   console.log('Searching novel parameters with threshold:', matchThreshold);
   
+  // First check if we have any parameters without embeddings
+  const { data: parametersWithoutEmbeddings, error: checkError } = await supabase
+    .from('novel_parameter_references')
+    .select('id')
+    .is('embedding', null);
+
+  if (checkError) {
+    console.error('Error checking parameters:', checkError);
+    throw checkError;
+  }
+
+  // If we found parameters without embeddings, generate them
+  if (parametersWithoutEmbeddings && parametersWithoutEmbeddings.length > 0) {
+    console.log(`Found ${parametersWithoutEmbeddings.length} parameters without embeddings, generating...`);
+    
+    const { error: genError } = await supabase.functions.invoke('generate-parameter-embeddings');
+    if (genError) {
+      console.error('Error generating embeddings:', genError);
+      throw genError;
+    }
+    
+    // Wait a bit for embeddings to be generated
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+
   const { data, error } = await supabase.rpc('match_novel_parameters', {
     query_embedding: queryEmbedding,
     match_threshold: matchThreshold,

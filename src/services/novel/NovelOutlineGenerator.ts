@@ -42,6 +42,9 @@ export class NovelOutlineGenerator {
   async generateOutline(): Promise<NovelOutline> {
     console.log('Starting outline generation process');
     
+    // First, ensure parameter embeddings are generated
+    await this.ensureParameterEmbeddings();
+    
     // Fetch and apply parameter weights
     await this.fetchParameterWeights();
     
@@ -63,10 +66,7 @@ export class NovelOutlineGenerator {
       }
     };
 
-    // Apply dimensional guidance with weighted parameters
     await this.applyWeightedGuidance(outline);
-
-    // Validate structure
     await validateOutlineStructure(outline);
 
     console.log('Outline generation complete:', {
@@ -75,6 +75,35 @@ export class NovelOutlineGenerator {
     });
 
     return outline;
+  }
+
+  private async ensureParameterEmbeddings(): Promise<void> {
+    try {
+      console.log('Checking for parameters without embeddings...');
+      
+      const { data: parametersWithoutEmbeddings, error: checkError } = await supabase
+        .from('novel_parameter_references')
+        .select('id')
+        .is('embedding', null);
+
+      if (checkError) throw checkError;
+
+      if (parametersWithoutEmbeddings && parametersWithoutEmbeddings.length > 0) {
+        console.log(`Found ${parametersWithoutEmbeddings.length} parameters without embeddings, generating...`);
+        
+        const { error: genError } = await supabase.functions.invoke('generate-parameter-embeddings');
+        if (genError) throw genError;
+        
+        // Wait a bit for embeddings to be generated
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.log('Parameter embeddings generation initiated');
+      } else {
+        console.log('All parameters have embeddings');
+      }
+    } catch (error) {
+      console.error('Error ensuring parameter embeddings:', error);
+      throw error;
+    }
   }
 
   private async fetchParameterWeights(): Promise<void> {
