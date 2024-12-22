@@ -2,180 +2,20 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import OpenAI from "https://deno.land/x/openai@v4.24.0/mod.ts";
+import { calculateDimensions } from '@/lib/novel/weightingSystem';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Parameter Processing Functions
-function calculateComplexity(parameters: any, matchedParams: any) {
-  const base = 1.0;
-  const worldFactor = parameters.worldComplexity * 0.2;
-  const culturalFactor = parameters.culturalDepth * 0.15;
-  const genreBonus = parameters.primaryGenre === 'Hard Sci-Fi' ? 0.3 : 0;
-  return Math.min(base + worldFactor + culturalFactor + genreBonus, 2.5);
-}
-
-function calculateConflict(parameters: any, matchedParams: any) {
-  const base = 1.0;
-  const violenceFactor = parameters.violenceLevel * 0.3;
-  const conflictTypes = parameters.conflictTypes.length * 0.2;
-  return Math.min(base + violenceFactor + conflictTypes, 2.5);
-}
-
-function calculateEmotionalDepth(parameters: any) {
-  return Math.min(parameters.emotionalIntensity * 0.5, 2.5);
-}
-
-function calculateDetail(parameters: any) {
-  return Math.min((parameters.toneDescriptive + parameters.descriptionDensity) * 0.3, 2.5);
-}
-
-function calculateTone(parameters: any) {
-  const base = 1.5;
-  return Math.min(base + (parameters.toneFormality - 3) * 0.2, 2.5);
-}
-
-function calculateStructuralExpansion(parameters: any) {
-  const lengthFactors: Record<string, number> = {
-    '50k-100k': 1.0,
-    '100k-150k': 1.5,
-    '150k+': 2.0
-  };
-  return Math.min(lengthFactors[parameters.novelLength] || 1.0, 2.5);
-}
-
-function calculatePacing(parameters: any) {
-  return Math.min((parameters.pacingOverall + parameters.pacingVariance) * 0.3, 2.5);
-}
-
-function calculateThematicResonance(parameters: any, matchedParams: any) {
-  const base = 1.0;
-  const themeMatches = matchedParams.theme ? matchedParams.theme.length * 0.2 : 0;
-  return Math.min(base + themeMatches, 2.5);
-}
-
-function calculateCulturalCohesion(parameters: any) {
-  return Math.min(parameters.culturalDepth * 0.4, 2.5);
-}
-
-function calculateCharacterChemistry(parameters: any) {
-  return Math.min(parameters.characters.length * 0.3, 2.5);
-}
-
-function calculateGenreAuthenticity(parameters: any, matchedParams: any) {
-  const base = 1.0;
-  const genreMatches = matchedParams.genre ? matchedParams.genre.length * 0.2 : 0;
-  return Math.min(base + genreMatches, 2.5);
-}
-
-function calculateNarrativeMomentum(parameters: any) {
-  return Math.min((parameters.pacingOverall + parameters.emotionalIntensity) * 0.25, 2.5);
-}
-
-function calculateWorldIntegration(parameters: any) {
-  return Math.min((parameters.worldComplexity + parameters.culturalDepth) * 0.3, 2.5);
-}
-
-// Dimension Processing Functions
-function calculateDimensions(parameters: any, matchedParams: any) {
-  const dimensions = {
-    complexity: calculateComplexity(parameters, matchedParams),
-    conflict: calculateConflict(parameters, matchedParams),
-    emotionalDepth: calculateEmotionalDepth(parameters),
-    detail: calculateDetail(parameters),
-    tone: calculateTone(parameters),
-    structuralExpansion: calculateStructuralExpansion(parameters),
-    pacing: calculatePacing(parameters),
-    thematicResonance: calculateThematicResonance(parameters, matchedParams),
-    culturalCohesion: calculateCulturalCohesion(parameters),
-    characterChemistry: calculateCharacterChemistry(parameters),
-    genreAuthenticity: calculateGenreAuthenticity(parameters, matchedParams),
-    narrativeMomentum: calculateNarrativeMomentum(parameters),
-    worldIntegration: calculateWorldIntegration(parameters)
-  };
-
-  return applyGenreAdjustments(dimensions, parameters.primaryGenre);
-}
-
-function applyGenreAdjustments(dimensions: any, genre: string) {
-  const adjustedDimensions = { ...dimensions };
-
-  switch (genre) {
-    case 'High Fantasy':
-    case 'Epic Fantasy':
-      adjustedDimensions.complexity *= 1.2;
-      adjustedDimensions.worldIntegration *= 1.3;
-      break;
-    case 'Hard Sci-Fi':
-      adjustedDimensions.complexity *= 1.4;
-      adjustedDimensions.detail *= 1.3;
-      break;
-    case 'Detective':
-    case 'Noir':
-      adjustedDimensions.narrativeMomentum *= 1.2;
-      adjustedDimensions.conflict *= 1.1;
-      break;
-  }
-
-  // Ensure no dimension exceeds 2.5
-  Object.keys(adjustedDimensions).forEach(key => {
-    adjustedDimensions[key] = Math.min(adjustedDimensions[key], 2.5);
-  });
-
-  return adjustedDimensions;
-}
-
-function processMatchedParameters(parameters: any[]) {
-  const categorizedParams = {
-    genre: [] as any[],
-    theme: [] as any[],
-    structure: [] as any[],
-    style: [] as any[],
-    technical: [] as any[],
-    content: [] as any[],
-  };
-
-  parameters.forEach(param => {
-    const weight = param.weight * param.similarity;
-    const weightedDescription = `${param.description} (Impact: ${weight.toFixed(2)})`;
-    
-    switch (param.category) {
-      case 'genre_conventions':
-        categorizedParams.genre.push(weightedDescription);
-        break;
-      case 'thematic_elements':
-        categorizedParams.theme.push(weightedDescription);
-        break;
-      case 'narrative_structure':
-        categorizedParams.structure.push(weightedDescription);
-        break;
-      case 'writing_style':
-        categorizedParams.style.push(weightedDescription);
-        break;
-      case 'technical_requirements':
-        categorizedParams.technical.push(weightedDescription);
-        break;
-      case 'content_controls':
-        categorizedParams.content.push(weightedDescription);
-        break;
-    }
-  });
-
-  return categorizedParams;
-}
-
-function buildEnhancedSystemPrompt(parameters: any, matchedParams: any) {
-  const dimensions = calculateDimensions(parameters, matchedParams);
-  
+function buildEnhancedSystemPrompt(parameters: any, dimensions: any) {
   return `You are a professional novel outline generator specializing in ${parameters.primaryGenre} stories.
 
-WEIGHTED PARAMETER GUIDELINES:
-${formatParameterGuidelines(matchedParams)}
-
 STORY DIMENSIONS:
-${formatDimensions(dimensions)}
+${Object.entries(dimensions)
+  .map(([key, value]) => `${key}: ${value.toFixed(2)}/2.5`)
+  .join('\n')}
 
 GENRE-SPECIFIC FRAMEWORK:
 ${getGenreFramework(parameters.primaryGenre)}
@@ -190,40 +30,7 @@ DIMENSION-BASED GUIDANCE:
 ${generateDimensionGuidance(dimensions)}`;
 }
 
-function formatParameterGuidelines(matchedParams: any) {
-  return Object.entries(matchedParams)
-    .map(([category, params]) => {
-      return `${category.toUpperCase()}:\n${params.join('\n')}`;
-    })
-    .join('\n\n');
-}
-
-function formatDimensions(dimensions: any) {
-  return Object.entries(dimensions)
-    .map(([key, value]) => `${key}: ${value.toFixed(2)}/2.5 - ${getDimensionDescription(key)}`)
-    .join('\n');
-}
-
-function getDimensionDescription(dimension: string) {
-  const descriptions: Record<string, string> = {
-    complexity: "Subplot layering, world-building depth, political intricacies",
-    conflict: "Aggressiveness, moral or physical tension, confrontation scale",
-    emotionalDepth: "Character feelings, relationship dynamics, emotional impact",
-    detail: "Environmental descriptions, character details, action precision",
-    tone: "Overall mood, atmosphere, narrative voice",
-    structuralExpansion: "Plot complexity, chapter organization, narrative layers",
-    pacing: "Story rhythm, scene transitions, tension management",
-    thematicResonance: "Theme integration, symbolic depth, message clarity",
-    culturalCohesion: "World consistency, social dynamics, cultural authenticity",
-    characterChemistry: "Character interactions, relationship development, cast dynamics",
-    genreAuthenticity: "Genre convention adherence, trope usage, reader expectations",
-    narrativeMomentum: "Story progression, plot advancement, reader engagement",
-    worldIntegration: "Setting incorporation, world-building elements, environmental impact"
-  };
-  return descriptions[dimension] || "";
-}
-
-function getGenreFramework(genre: string) {
+function getGenreFramework(genre: string): string {
   const frameworks: Record<string, string> = {
     'High Fantasy': `
 - Increased complexity and detail requirements
@@ -247,62 +54,49 @@ function getGenreFramework(genre: string) {
 - Social implications focus
     `,
     'Mystery': `
-- Clue placement
-- Red herring management
-- Investigation pacing
-- Character suspicion balance
-- Resolution satisfaction
+- Puzzle-like structure, clue distribution, tension arcs
+- Detective actively investigating
+- Cozy Mystery with lighter tone
+- Noir with gritty settings
+- Thriller with higher stakes
     `,
-    'Thriller': `
-- Tension and suspense building
-- High stakes situations
-- Fast-paced action
-- Psychological elements
-- Complex character motivations
+    'Romance': `
+- Focus on relationship arcs, emotional tension, intimacy
+- Historical with period detail
+- Paranormal with supernatural elements
+    `,
+    'Literary Fiction': `
+- Emphasizes character introspection, thematic depth
+- Satire with comedic but pointed social commentary
     `
   };
   return frameworks[genre] || "";
 }
 
-function generateDimensionGuidance(dimensions: any) {
+function generateDimensionGuidance(dimensions: any): string {
   return Object.entries(dimensions)
     .map(([dimension, value]) => generateGuidanceForDimension(dimension, value))
     .join('\n');
 }
 
-function generateGuidanceForDimension(dimension: string, value: number) {
+function generateGuidanceForDimension(dimension: string, value: number): string {
   const guidanceMap: Record<string, (v: number) => string> = {
     complexity: (v) => `Maintain complexity level ${v.toFixed(1)} through layered subplots and detailed world-building`,
     conflict: (v) => `Balance conflict intensity at ${v.toFixed(1)} across personal and external challenges`,
     emotionalDepth: (v) => `Develop emotional resonance to depth level ${v.toFixed(1)} in character interactions`,
-    // Add guidance for other dimensions
+    detail: (v) => `Ensure detail level ${v.toFixed(1)} through rich descriptions and environmental context`,
+    tone: (v) => `Set tone at ${v.toFixed(1)} to match the overall mood of the story`,
+    structuralExpansion: (v) => `Expand structure to ${v.toFixed(1)} for a more intricate plot`,
+    pacing: (v) => `Adjust pacing to ${v.toFixed(1)} for optimal reader engagement`,
+    thematicResonance: (v) => `Ensure thematic resonance at ${v.toFixed(1)} to align with chosen themes`,
+    culturalCohesion: (v) => `Maintain cultural cohesion at ${v.toFixed(1)} for authenticity`,
+    characterChemistry: (v) => `Enhance character chemistry to ${v.toFixed(1)} for dynamic interactions`,
+    genreAuthenticity: (v) => `Ensure genre authenticity at ${v.toFixed(1)} to meet reader expectations`,
+    narrativeMomentum: (v) => `Build narrative momentum to ${v.toFixed(1)} for a compelling story`,
+    worldIntegration: (v) => `Integrate world elements at ${v.toFixed(1)} to enrich the narrative`
   };
   
   return guidanceMap[dimension]?.(value) || `Maintain ${dimension} at level ${value.toFixed(1)}`;
-}
-
-function validateOutlineStructure(outline: any): boolean {
-  try {
-    if (!outline.chapters || !Array.isArray(outline.chapters)) return false;
-    if (!outline.metadata) return false;
-
-    for (const chapter of outline.chapters) {
-      if (!chapter.chapterNumber || !chapter.title || !chapter.summary) return false;
-      if (!chapter.scenes || !Array.isArray(chapter.scenes)) return false;
-
-      for (const scene of chapter.scenes) {
-        if (!scene.id || !scene.sceneFocus || !scene.conflict || !scene.settingDetails) return false;
-        if (!scene.characterInvolvement || !Array.isArray(scene.characterInvolvement)) return false;
-      }
-    }
-
-    if (!outline.metadata.totalEstimatedWordCount || !outline.metadata.mainTheme) return false;
-
-    return true;
-  } catch (error) {
-    console.error('Validation error:', error);
-    return false;
-  }
 }
 
 serve(async (req) => {
@@ -312,10 +106,7 @@ serve(async (req) => {
 
   try {
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
-    console.log('Checking OpenAI API key configuration...');
-    
     if (!openAiKey) {
-      console.error('OpenAI API key is not set');
       throw new Error('OpenAI API key is not configured');
     }
 
@@ -326,12 +117,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    console.log('Initializing OpenAI client...');
     const openai = new OpenAI({
       apiKey: openAiKey,
     });
 
-    console.log('Fetching session data...');
     const { data: session, error: sessionError } = await supabase
       .from('story_generation_sessions')
       .select('parameters, user_id')
@@ -343,30 +132,11 @@ serve(async (req) => {
 
     console.log('Retrieved session parameters:', session.parameters);
 
-    console.log('Generating embedding for parameter matching...');
-    const embeddingResponse = await openai.embeddings.create({
-      model: "text-embedding-ada-002",
-      input: JSON.stringify(session.parameters),
-    });
+    // Calculate dimensions using our new weighting system
+    const dimensions = calculateDimensions(session.parameters);
+    console.log('Calculated dimensions:', dimensions);
 
-    const embedding = embeddingResponse.data[0].embedding;
-    console.log('Generated embedding for parameter matching');
-
-    console.log('Matching novel parameters...');
-    const { data: matchedParams, error: matchError } = await supabase.rpc('match_novel_parameters', {
-      query_embedding: embedding,
-      match_threshold: 0.7,
-      match_count: 20
-    });
-
-    if (matchError) throw matchError;
-
-    console.log('Found matching parameters:', matchedParams.length);
-    
-    const processedParams = processMatchedParameters(matchedParams);
-    console.log('Processed and categorized parameters');
-
-    const systemPrompt = buildEnhancedSystemPrompt(session.parameters, processedParams);
+    const systemPrompt = buildEnhancedSystemPrompt(session.parameters, dimensions);
     const userPrompt = `Generate a detailed novel outline following these parameters:
 ${JSON.stringify(session.parameters, null, 2)}
 
@@ -403,7 +173,6 @@ Required JSON Structure:
 
     console.log('Received response from OpenAI');
     let responseContent = completion.choices[0].message.content;
-    console.log('Raw response:', responseContent);
     
     if (responseContent.includes('```json')) {
       responseContent = responseContent.replace(/```json\n|\n```/g, '');
@@ -435,10 +204,7 @@ Required JSON Structure:
         content: JSON.stringify(outline)
       });
 
-    if (storeError) {
-      console.error('Error storing outline:', storeError);
-      throw storeError;
-    }
+    if (storeError) throw storeError;
 
     console.log('Updating session status...');
     const { error: updateError } = await supabase
@@ -446,10 +212,7 @@ Required JSON Structure:
       .update({ status: 'completed' })
       .eq('id', sessionId);
 
-    if (updateError) {
-      console.error('Error updating session status:', updateError);
-      throw updateError;
-    }
+    if (updateError) throw updateError;
 
     console.log('Successfully completed novel generation');
 
