@@ -33,7 +33,7 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
         .insert({
           user_id: session.user.id,
           parameters: values,
-          status: 'pending'
+          status: 'in_progress' // Changed from 'pending' to 'in_progress'
         });
 
       if (error) throw error;
