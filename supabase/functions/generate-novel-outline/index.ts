@@ -8,45 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function processMatchedParameters(parameters: any[]) {
-  const categorizedParams = {
-    genre: [] as any[],
-    theme: [] as any[],
-    structure: [] as any[],
-    style: [] as any[],
-    technical: [] as any[],
-    content: [] as any[],
-  };
-
-  parameters.forEach(param => {
-    const weight = param.weight * param.similarity;
-    const weightedDescription = `${param.description} (Impact: ${weight.toFixed(2)})`;
-    
-    switch (param.category) {
-      case 'genre_conventions':
-        categorizedParams.genre.push(weightedDescription);
-        break;
-      case 'thematic_elements':
-        categorizedParams.theme.push(weightedDescription);
-        break;
-      case 'narrative_structure':
-        categorizedParams.structure.push(weightedDescription);
-        break;
-      case 'writing_style':
-        categorizedParams.style.push(weightedDescription);
-        break;
-      case 'technical_requirements':
-        categorizedParams.technical.push(weightedDescription);
-        break;
-      case 'content_controls':
-        categorizedParams.content.push(weightedDescription);
-        break;
-    }
-  });
-
-  return categorizedParams;
-}
-
+// Parameter Processing Functions
 function calculateComplexity(parameters: any, matchedParams: any) {
   const base = 1.0;
   const worldFactor = parameters.worldComplexity * 0.2;
@@ -116,6 +78,7 @@ function calculateWorldIntegration(parameters: any) {
   return Math.min((parameters.worldComplexity + parameters.culturalDepth) * 0.3, 2.5);
 }
 
+// Dimension Processing Functions
 function calculateDimensions(parameters: any, matchedParams: any) {
   const dimensions = {
     complexity: calculateComplexity(parameters, matchedParams),
@@ -164,20 +127,43 @@ function applyGenreAdjustments(dimensions: any, genre: string) {
   return adjustedDimensions;
 }
 
-function normalizeDimensions(dimensions: any) {
-  const sum = Object.values(dimensions).reduce((a: number, b: number) => a + b, 0);
-  const maxSum = 25; // Maximum allowed sum of all dimensions
-  
-  if (sum > maxSum) {
-    const factor = maxSum / sum;
-    const normalized = {} as any;
-    Object.entries(dimensions).forEach(([key, value]) => {
-      normalized[key] = (value as number) * factor;
-    });
-    return normalized;
-  }
-  
-  return dimensions;
+function processMatchedParameters(parameters: any[]) {
+  const categorizedParams = {
+    genre: [] as any[],
+    theme: [] as any[],
+    structure: [] as any[],
+    style: [] as any[],
+    technical: [] as any[],
+    content: [] as any[],
+  };
+
+  parameters.forEach(param => {
+    const weight = param.weight * param.similarity;
+    const weightedDescription = `${param.description} (Impact: ${weight.toFixed(2)})`;
+    
+    switch (param.category) {
+      case 'genre_conventions':
+        categorizedParams.genre.push(weightedDescription);
+        break;
+      case 'thematic_elements':
+        categorizedParams.theme.push(weightedDescription);
+        break;
+      case 'narrative_structure':
+        categorizedParams.structure.push(weightedDescription);
+        break;
+      case 'writing_style':
+        categorizedParams.style.push(weightedDescription);
+        break;
+      case 'technical_requirements':
+        categorizedParams.technical.push(weightedDescription);
+        break;
+      case 'content_controls':
+        categorizedParams.content.push(weightedDescription);
+        break;
+    }
+  });
+
+  return categorizedParams;
 }
 
 function buildEnhancedSystemPrompt(parameters: any, matchedParams: any) {
@@ -266,6 +252,13 @@ function getGenreFramework(genre: string) {
 - Investigation pacing
 - Character suspicion balance
 - Resolution satisfaction
+    `,
+    'Thriller': `
+- Tension and suspense building
+- High stakes situations
+- Fast-paced action
+- Psychological elements
+- Complex character motivations
     `
   };
   return frameworks[genre] || "";
@@ -286,6 +279,30 @@ function generateGuidanceForDimension(dimension: string, value: number) {
   };
   
   return guidanceMap[dimension]?.(value) || `Maintain ${dimension} at level ${value.toFixed(1)}`;
+}
+
+function validateOutlineStructure(outline: any): boolean {
+  try {
+    if (!outline.chapters || !Array.isArray(outline.chapters)) return false;
+    if (!outline.metadata) return false;
+
+    for (const chapter of outline.chapters) {
+      if (!chapter.chapterNumber || !chapter.title || !chapter.summary) return false;
+      if (!chapter.scenes || !Array.isArray(chapter.scenes)) return false;
+
+      for (const scene of chapter.scenes) {
+        if (!scene.id || !scene.sceneFocus || !scene.conflict || !scene.settingDetails) return false;
+        if (!scene.characterInvolvement || !Array.isArray(scene.characterInvolvement)) return false;
+      }
+    }
+
+    if (!outline.metadata.totalEstimatedWordCount || !outline.metadata.mainTheme) return false;
+
+    return true;
+  } catch (error) {
+    console.error('Validation error:', error);
+    return false;
+  }
 }
 
 serve(async (req) => {
@@ -376,7 +393,7 @@ Required JSON Structure:
 
     console.log('Sending request to OpenAI...');
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
