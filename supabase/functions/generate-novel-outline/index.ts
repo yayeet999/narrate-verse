@@ -14,6 +14,17 @@ serve(async (req) => {
   }
 
   try {
+    const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAiKey) {
+      console.error('OpenAI API key is not set');
+      throw new Error('OpenAI API key is not configured. Please set it in the Supabase dashboard.');
+    }
+
+    if (!openAiKey.startsWith('sk-')) {
+      console.error('Invalid OpenAI API key format');
+      throw new Error('Invalid OpenAI API key format. Please ensure you are using a valid OpenAI API key.');
+    }
+
     const { sessionId } = await req.json();
     console.log('Processing novel generation for session:', sessionId);
 
@@ -24,7 +35,7 @@ serve(async (req) => {
 
     // Initialize OpenAI client
     const openai = new OpenAI({
-      apiKey: Deno.env.get('OPENAI_API_KEY')!,
+      apiKey: openAiKey,
     });
 
     // Get session data
