@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import { 
   Breadcrumb,
   BreadcrumbItem,
@@ -12,6 +13,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { CoreStructureStep } from '@/components/novel/CoreStructureStep';
+import { GenreThemeStep } from '@/components/novel/GenreThemeStep';
 import type { NovelParameters } from '@/types/novel';
 
 type NovelSetupStep = 
@@ -109,6 +112,33 @@ const NovelSetup = () => {
     }
   };
 
+  const handleNext = () => {
+    const steps = Object.keys(STEPS) as NovelSetupStep[];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex < steps.length - 1) {
+      setCurrentStep(steps[currentIndex + 1]);
+    }
+  };
+
+  const handlePrevious = () => {
+    const steps = Object.keys(STEPS) as NovelSetupStep[];
+    const currentIndex = steps.indexOf(currentStep);
+    if (currentIndex > 0) {
+      setCurrentStep(steps[currentIndex - 1]);
+    }
+  };
+
+  const renderCurrentStep = () => {
+    switch (currentStep) {
+      case 'core-structure':
+        return <CoreStructureStep form={form} />;
+      case 'genre-theme':
+        return <GenreThemeStep form={form} />;
+      default:
+        return <div>Step {currentStep} is under construction</div>;
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
@@ -174,7 +204,24 @@ const NovelSetup = () => {
       </div>
 
       <Card className="p-6">
-        {/* Step components will be rendered here */}
+        <form onSubmit={(e) => e.preventDefault()}>
+          {renderCurrentStep()}
+          
+          <div className="flex justify-between mt-6">
+            <Button
+              variant="ghost"
+              onClick={handlePrevious}
+              disabled={currentStepIndex === 1}
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Previous
+            </Button>
+            <Button onClick={handleNext}>
+              {currentStepIndex === totalSteps ? 'Complete' : 'Next'}
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </form>
       </Card>
     </div>
   );
