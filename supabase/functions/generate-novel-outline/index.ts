@@ -47,40 +47,137 @@ function processMatchedParameters(parameters: any[]) {
   return categorizedParams;
 }
 
+function calculateComplexity(parameters: any, matchedParams: any) {
+  const base = 1.0;
+  const worldFactor = parameters.worldComplexity * 0.2;
+  const culturalFactor = parameters.culturalDepth * 0.15;
+  const genreBonus = parameters.primaryGenre === 'Hard Sci-Fi' ? 0.3 : 0;
+  return Math.min(base + worldFactor + culturalFactor + genreBonus, 2.5);
+}
+
+function calculateConflict(parameters: any, matchedParams: any) {
+  const base = 1.0;
+  const violenceFactor = parameters.violenceLevel * 0.3;
+  const conflictTypes = parameters.conflictTypes.length * 0.2;
+  return Math.min(base + violenceFactor + conflictTypes, 2.5);
+}
+
+function calculateEmotionalDepth(parameters: any) {
+  return Math.min(parameters.emotionalIntensity * 0.5, 2.5);
+}
+
+function calculateDetail(parameters: any) {
+  return Math.min((parameters.toneDescriptive + parameters.descriptionDensity) * 0.3, 2.5);
+}
+
+function calculateTone(parameters: any) {
+  const base = 1.5;
+  return Math.min(base + (parameters.toneFormality - 3) * 0.2, 2.5);
+}
+
+function calculateStructuralExpansion(parameters: any) {
+  const lengthFactors: Record<string, number> = {
+    '50k-100k': 1.0,
+    '100k-150k': 1.5,
+    '150k+': 2.0
+  };
+  return Math.min(lengthFactors[parameters.novelLength] || 1.0, 2.5);
+}
+
+function calculatePacing(parameters: any) {
+  return Math.min((parameters.pacingOverall + parameters.pacingVariance) * 0.3, 2.5);
+}
+
+function calculateThematicResonance(parameters: any, matchedParams: any) {
+  const base = 1.0;
+  const themeMatches = matchedParams.theme ? matchedParams.theme.length * 0.2 : 0;
+  return Math.min(base + themeMatches, 2.5);
+}
+
+function calculateCulturalCohesion(parameters: any) {
+  return Math.min(parameters.culturalDepth * 0.4, 2.5);
+}
+
+function calculateCharacterChemistry(parameters: any) {
+  return Math.min(parameters.characters.length * 0.3, 2.5);
+}
+
+function calculateGenreAuthenticity(parameters: any, matchedParams: any) {
+  const base = 1.0;
+  const genreMatches = matchedParams.genre ? matchedParams.genre.length * 0.2 : 0;
+  return Math.min(base + genreMatches, 2.5);
+}
+
+function calculateNarrativeMomentum(parameters: any) {
+  return Math.min((parameters.pacingOverall + parameters.emotionalIntensity) * 0.25, 2.5);
+}
+
+function calculateWorldIntegration(parameters: any) {
+  return Math.min((parameters.worldComplexity + parameters.culturalDepth) * 0.3, 2.5);
+}
+
 function calculateDimensions(parameters: any, matchedParams: any) {
   const dimensions = {
-    complexity: 0,
-    conflict: 0,
-    emotionalDepth: 0,
-    detail: 0,
-    tone: 0,
-    structuralExpansion: 0,
-    pacing: 0,
-    thematicResonance: 0,
-    culturalCohesion: 0,
-    characterChemistry: 0,
-    genreAuthenticity: 0,
-    narrativeMomentum: 0,
-    worldIntegration: 0
+    complexity: calculateComplexity(parameters, matchedParams),
+    conflict: calculateConflict(parameters, matchedParams),
+    emotionalDepth: calculateEmotionalDepth(parameters),
+    detail: calculateDetail(parameters),
+    tone: calculateTone(parameters),
+    structuralExpansion: calculateStructuralExpansion(parameters),
+    pacing: calculatePacing(parameters),
+    thematicResonance: calculateThematicResonance(parameters, matchedParams),
+    culturalCohesion: calculateCulturalCohesion(parameters),
+    characterChemistry: calculateCharacterChemistry(parameters),
+    genreAuthenticity: calculateGenreAuthenticity(parameters, matchedParams),
+    narrativeMomentum: calculateNarrativeMomentum(parameters),
+    worldIntegration: calculateWorldIntegration(parameters)
   };
 
-  dimensions.complexity = calculateComplexity(parameters, matchedParams);
-  dimensions.conflict = calculateConflict(parameters, matchedParams);
-  dimensions.emotionalDepth = calculateEmotionalDepth(parameters);
-  dimensions.detail = calculateDetail(parameters);
-  dimensions.tone = calculateTone(parameters);
-  dimensions.structuralExpansion = calculateStructuralExpansion(parameters);
-  dimensions.pacing = calculatePacing(parameters);
-  dimensions.thematicResonance = calculateThematicResonance(parameters, matchedParams);
-  dimensions.culturalCohesion = calculateCulturalCohesion(parameters);
-  dimensions.characterChemistry = calculateCharacterChemistry(parameters);
-  dimensions.genreAuthenticity = calculateGenreAuthenticity(parameters, matchedParams);
-  dimensions.narrativeMomentum = calculateNarrativeMomentum(parameters);
-  dimensions.worldIntegration = calculateWorldIntegration(parameters);
+  return applyGenreAdjustments(dimensions, parameters.primaryGenre);
+}
 
-  applyGenreAdjustments(dimensions, parameters.primaryGenre);
+function applyGenreAdjustments(dimensions: any, genre: string) {
+  const adjustedDimensions = { ...dimensions };
 
-  return normalizeDimensions(dimensions);
+  switch (genre) {
+    case 'High Fantasy':
+    case 'Epic Fantasy':
+      adjustedDimensions.complexity *= 1.2;
+      adjustedDimensions.worldIntegration *= 1.3;
+      break;
+    case 'Hard Sci-Fi':
+      adjustedDimensions.complexity *= 1.4;
+      adjustedDimensions.detail *= 1.3;
+      break;
+    case 'Detective':
+    case 'Noir':
+      adjustedDimensions.narrativeMomentum *= 1.2;
+      adjustedDimensions.conflict *= 1.1;
+      break;
+  }
+
+  // Ensure no dimension exceeds 2.5
+  Object.keys(adjustedDimensions).forEach(key => {
+    adjustedDimensions[key] = Math.min(adjustedDimensions[key], 2.5);
+  });
+
+  return adjustedDimensions;
+}
+
+function normalizeDimensions(dimensions: any) {
+  const sum = Object.values(dimensions).reduce((a: number, b: number) => a + b, 0);
+  const maxSum = 25; // Maximum allowed sum of all dimensions
+  
+  if (sum > maxSum) {
+    const factor = maxSum / sum;
+    const normalized = {} as any;
+    Object.entries(dimensions).forEach(([key, value]) => {
+      normalized[key] = (value as number) * factor;
+    });
+    return normalized;
+  }
+  
+  return dimensions;
 }
 
 function buildEnhancedSystemPrompt(parameters: any, matchedParams: any) {
