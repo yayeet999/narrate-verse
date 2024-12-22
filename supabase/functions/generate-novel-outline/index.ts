@@ -520,7 +520,7 @@ For each character:
 
 ## **6. Enhanced Formulas (Illustrative)**
 
-Let `p_i` be the set of parameter influences in dimension `d`. Let `C_i` be confidence scores. Let `stackCount` track repeated influences. Let `G_f(d)` be genre factor for dimension `d`.
+Let \`p_i\` be the set of parameter influences in dimension \`d\`. Let \`C_i\` be confidence scores. Let \`stackCount\` track repeated influences. Let \`G_f(d)\` be genre factor for dimension \`d\`.
 
 1. **Base Summation**
   dimension_d = Σ( p_i * C_i )
@@ -593,7 +593,83 @@ Let `p_i` be the set of parameter influences in dimension `d`. Let `C_i` be conf
 3. Use the enhanced parameters to inform the narrative's depth, focus, and complexity, ensuring a balanced and engaging storyline.
 4. Construct a detailed and coherent outline that not only adheres to the user's enhanced parameters but also elevates the narrative to meet high genre standards and thematic elements.
 5. Maintain consistency with genre conventions, ensuring thematic and stylistic coherence throughout the outline.
-6. Generate the outline in the specified JSON format.`;
+6. Generate the outline in the specified JSON format.
+7. The final output **must always be valid JSON** that strictly follows the schema below:
+
+\`\`\`json
+{
+  "title": "string",
+  "storyDescription": "string",
+  "chapters": [
+    {
+      "chapterNumber": "number or string",
+      "chapterName": "string",
+      "chapterSummary": "string",
+      "keyPlotPoints": [
+        "string"
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "name": "string",
+      "role": "string",
+      "characterArc": "string"
+    }
+  ],
+  "themes": [
+    "string"
+  ],
+  "worldDetails": {
+    "setting": "string",
+    "worldComplexity": "number",
+    "culturalDepth": "number"
+  },
+  "additionalNotes": "string"
+}
+\`\`\`
+
+8. **Example of a properly formatted JSON response**:
+
+\`\`\`json
+{
+  "title": "Shadows of Elysium",
+  "storyDescription": "A lone wanderer must save a crumbling kingdom threatened by looming darkness.",
+  "chapters": [
+    {
+      "chapterNumber": 1,
+      "chapterName": "The Gathering Storm",
+      "chapterSummary": "Introduction to the hero and the conflict overshadowing Elysium.",
+      "keyPlotPoints": [
+        "Protagonist introduced",
+        "Hint of the dark forces at work",
+        "Call to action arises"
+      ]
+    }
+  ],
+  "characters": [
+    {
+      "name": "Althea Stormrider",
+      "role": "Protagonist",
+      "characterArc": "Coming of Age"
+    }
+  ],
+  "themes": [
+    "Redemption",
+    "Good vs Evil"
+  ],
+  "worldDetails": {
+    "setting": "Fantasy",
+    "worldComplexity": 5,
+    "culturalDepth": 4
+  },
+  "additionalNotes": "Focus on moral ambiguity and intense action sequences."
+}
+\`\`\`
+
+9. This structure **must be followed**. The outline **must** conform to valid JSON, with no additional commentary or non-JSON text.
+
+`;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
