@@ -688,27 +688,22 @@ serve(async (req) => {
   try {
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAiKey) {
-      console.error('OpenAI API key is not configured');
       throw new Error('OpenAI API key is not configured');
     }
 
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase configuration is missing');
       throw new Error('Supabase configuration is missing');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+
     const { parameters, sessionId } = await req.json();
     
-    if (!parameters || !sessionId) {
-      console.error('Missing required parameters:', { hasParameters: !!parameters, hasSessionId: !!sessionId });
-      throw new Error('Missing required parameters');
-    }
-    
-    console.log('Generating enhanced novel outline with parameters:', {
+    console.log('Generating novel outline with parameters:', {
       sessionId,
       parameterSummary: {
         title: parameters.title,
@@ -722,168 +717,69 @@ serve(async (req) => {
       apiKey: openAiKey,
     });
 
-    // Generate base outline with strict JSON formatting instructions
-    console.log('Starting base outline generation...');
-    const baseOutlineCompletion = await openai.chat.completions.create({
+    const systemPrompt = NOVEL_GENERATION_PROMPT.replace(
+      '${JSON.stringify(parameters, null, 2)}',
+      JSON.stringify(parameters, null, 2)
+    );
+
+    const userPrompt = "Utilize the provided parameters, reference guide, and weighting system to generate a highly detailed and structured novel outline. Ensure that the outline reflects the enhanced parameters and adheres to the specified guidelines for depth, complexity, and thematic coherence.";
+
+    console.log('Sending request to OpenAI with enhanced prompt structure');
+
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { 
-          role: "system", 
-          content: `You are a novel outline generator that MUST return ONLY valid JSON following this exact schema:
-{
-  "title": "string",
-  "storyDescription": "string",
-  "chapters": [
-    {
-      "chapterNumber": "number",
-      "chapterName": "string",
-      "chapterSummary": "string",
-      "keyPlotPoints": ["string"]
-    }
-  ],
-  "characters": [
-    {
-      "name": "string",
-      "role": "string",
-      "characterArc": "string"
-    }
-  ],
-  "themes": ["string"],
-  "worldDetails": {
-    "setting": "string",
-    "worldComplexity": "number",
-    "culturalDepth": "number"
-  },
-  "additionalNotes": "string"
-}
-
-Do not include any explanations or text outside of the JSON structure.`
-        },
-        { 
-          role: "system", 
-          content: NOVEL_GENERATION_PROMPT.replace(
-            '${JSON.stringify(parameters, null, 2)}',
-            JSON.stringify(parameters, null, 2)
-          )
-        },
-        { 
-          role: "user", 
-          content: "Generate the initial novel outline following the provided parameters and guidelines." 
-        }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
       ],
       temperature: 0.7
     });
 
-    if (!baseOutlineCompletion.choices[0]?.message?.content) {
-      console.error('No content received from OpenAI for base outline');
-      throw new Error('Failed to generate base outline');
+    let responseContent = completion.choices[0].message.content;
+    
+    if (responseContent.includes('```json')) {
+      responseContent = responseContent.replace(/```json\n|\n```/g, '');
     }
-
-    let baseOutline;
+    
+    responseContent = responseContent.trim();
+    
+    let outline;
     try {
-      const content = baseOutlineCompletion.choices[0].message.content.trim();
-      console.log('Raw OpenAI response:', content);
-      baseOutline = JSON.parse(content);
-      console.log('Base outline generated successfully');
+      outline = JSON.parse(responseContent);
+      console.log('Successfully parsed outline JSON');
     } catch (parseError) {
-      console.error('Failed to parse base outline:', parseError);
-      console.log('Raw content:', baseOutlineCompletion.choices[0].message.content);
-      throw new Error('Invalid base outline format');
+      console.error('Failed to parse outline JSON:', parseError);
+      throw new Error(`Failed to parse outline JSON: ${parseError.message}`);
     }
 
-    // Generate refinements with strict JSON formatting
-    console.log('Starting refinements generation...');
-    const refinementPrompt = `
-    Analyze and enhance the following novel outline with deeper layers of:
-    - Narrative intensification (tension points, pacing analysis)
-    - Psychological complexity (character depth, decision points)
-    - Thematic reverberation (patterns, contrasts)
-    - Power dynamics (structures, hierarchies)
-    - Atmospheric detail (location moods, environmental themes)
-    - Conflict escalation (layers, progression)
-    - Relationship dynamics (character connections, evolution)
+    const { data: session, error: sessionError } = await supabase
+      .from('story_generation_sessions')
+      .select('status')
+      .eq('id', sessionId)
+      .single();
 
-    Important: Return ONLY valid JSON with the refinements following this exact schema:
-    {
-      "refinements": {
-        "narrativeEnhancements": ["string"],
-        "psychologicalLayers": ["string"],
-        "thematicPatterns": ["string"],
-        "atmosphericDetails": ["string"],
-        "relationshipDynamics": ["string"]
-      }
-    }
+    if (sessionError) throw sessionError;
 
-    Base outline:
-    ${JSON.stringify(baseOutline, null, 2)}
-    `;
-
-    const refinementCompletion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are a literary analysis expert who enhances story outlines with deeper layers of complexity. Return ONLY valid JSON following the specified schema."
-        },
-        {
-          role: "user",
-          content: refinementPrompt
-        }
-      ],
-      temperature: 0.7
-    });
-
-    if (!refinementCompletion.choices[0]?.message?.content) {
-      console.error('No content received from OpenAI for refinements');
-      throw new Error('Failed to generate refinements');
-    }
-
-    let refinements;
-    try {
-      const content = refinementCompletion.choices[0].message.content.trim();
-      console.log('Raw refinements response:', content);
-      refinements = JSON.parse(content);
-      console.log('Refinements generated successfully');
-    } catch (parseError) {
-      console.error('Failed to parse refinements:', parseError);
-      console.log('Raw content:', refinementCompletion.choices[0].message.content);
-      throw new Error('Invalid refinements format');
-    }
-
-    // Merge refinements into base outline
-    const enhancedOutline = {
-      ...baseOutline,
-      refinements: refinements.refinements
-    };
-
-    // Store the enhanced outline
-    console.log('Storing enhanced outline...');
+    // Store the generated outline
     const { error: storeError } = await supabase
       .from('story_generation_data')
       .insert({
         session_id: sessionId,
         data_type: 'outline',
-        content: JSON.stringify(enhancedOutline)
+        content: JSON.stringify(outline)
       });
 
-    if (storeError) {
-      console.error('Failed to store outline:', storeError);
-      throw storeError;
-    }
+    if (storeError) throw storeError;
 
     // Update session status
-    console.log('Updating session status...');
     const { error: updateError } = await supabase
       .from('story_generation_sessions')
       .update({ status: 'completed' })
       .eq('id', sessionId);
 
-    if (updateError) {
-      console.error('Failed to update session status:', updateError);
-      throw updateError;
-    }
+    if (updateError) throw updateError;
 
-    console.log('Successfully stored enhanced outline and updated session status');
+    console.log('Successfully stored outline and updated session status');
 
     return new Response(
       JSON.stringify({ success: true }),
