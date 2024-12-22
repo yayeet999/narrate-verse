@@ -11,10 +11,32 @@ interface LocationState {
   sessionId?: string;
 }
 
+interface OutlineChapter {
+  chapterNumber: number;
+  title: string;
+  summary: string;
+  scenes: Array<{
+    id: string;
+    sceneFocus: string;
+    conflict: string;
+    settingDetails: string;
+    characterInvolvement: string[];
+  }>;
+}
+
+interface Outline {
+  chapters: OutlineChapter[];
+  metadata: {
+    totalEstimatedWordCount: number;
+    mainTheme: string;
+    creationTimestamp: string;
+  };
+}
+
 const NovelGeneration = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [outline, setOutline] = useState<string>('');
+  const [outline, setOutline] = useState<Outline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { sessionId } = (location.state as LocationState) || {};
 
@@ -27,15 +49,15 @@ const NovelGeneration = () => {
 
     const checkGenerationStatus = async () => {
       try {
-        const { data, error } = await supabase
+        const { data: session, error: sessionError } = await supabase
           .from('story_generation_sessions')
           .select('status, parameters')
           .eq('id', sessionId)
           .single();
 
-        if (error) throw error;
+        if (sessionError) throw sessionError;
 
-        if (data.status === 'completed') {
+        if (session.status === 'completed') {
           // Fetch the generated outline
           const { data: outlineData, error: outlineError } = await supabase
             .from('story_generation_data')
@@ -46,9 +68,9 @@ const NovelGeneration = () => {
 
           if (outlineError) throw outlineError;
 
-          setOutline(outlineData.content);
+          setOutline(JSON.parse(outlineData.content));
           setIsLoading(false);
-        } else if (data.status === 'failed') {
+        } else if (session.status === 'failed') {
           toast.error('Generation failed. Please try again.');
           setIsLoading(false);
         }
@@ -66,6 +88,45 @@ const NovelGeneration = () => {
 
     return () => clearInterval(interval);
   }, [sessionId, navigate]);
+
+  const renderOutline = () => {
+    if (!outline) return null;
+
+    return (
+      <div className="space-y-6">
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold">Novel Outline</h2>
+          <p className="text-muted-foreground">
+            Estimated word count: {outline.metadata.totalEstimatedWordCount}
+          </p>
+          <p className="text-muted-foreground">
+            Main theme: {outline.metadata.mainTheme}
+          </p>
+        </div>
+
+        {outline.chapters.map((chapter) => (
+          <Card key={chapter.chapterNumber} className="p-4">
+            <h3 className="text-lg font-medium mb-2">
+              {chapter.title}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {chapter.summary}
+            </p>
+            <div className="space-y-2">
+              {chapter.scenes.map((scene) => (
+                <div key={scene.id} className="pl-4 border-l-2 border-muted">
+                  <p className="text-sm font-medium">{scene.sceneFocus}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {scene.conflict}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -92,12 +153,7 @@ const NovelGeneration = () => {
             <p className="text-muted-foreground">Generating your novel outline...</p>
           </div>
         ) : (
-          <Textarea
-            value={outline}
-            onChange={(e) => setOutline(e.target.value)}
-            className="min-h-[400px] font-mono text-sm md:text-base lg:text-lg"
-            placeholder="Your generated outline will appear here..."
-          />
+          renderOutline()
         )}
       </Card>
     </div>
