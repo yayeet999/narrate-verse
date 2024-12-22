@@ -9,15 +9,18 @@ import { NarrativeStyleStep } from '@/components/novel/NarrativeStyleStep';
 import { WritingStyleStep } from '@/components/novel/WritingStyleStep';
 import { TechnicalDetailsStep } from '@/components/novel/TechnicalDetailsStep';
 import { ContentControlsStep } from '@/components/novel/ContentControlsStep';
+import { NovelPreviewStep } from '@/components/novel/NovelPreviewStep';
 import { NovelSetupHeader } from '@/components/novel/NovelSetupHeader';
 import { NovelSetupProgress } from '@/components/novel/NovelSetupProgress';
 import { NovelSetupStepSelector } from '@/components/novel/NovelSetupStepSelector';
 import { NovelSetupNavigation } from '@/components/novel/NovelSetupNavigation';
-import type { NovelParameters, NovelSetupStep } from '@/types/novel';
 import { STEPS } from '@/types/novel';
+import type { NovelParameters } from '@/types/novel';
+import DashboardLayout from '@/components/DashboardLayout';
 
 const NovelSetup = () => {
-  const [currentStep, setCurrentStep] = useState<NovelSetupStep>('core-structure');
+  const [currentStep, setCurrentStep] = useState<keyof typeof STEPS>('core-structure');
+  const [showPreview, setShowPreview] = useState(false);
   
   const form = useForm<NovelParameters>({
     defaultValues: {
@@ -50,26 +53,33 @@ const NovelSetup = () => {
   const totalSteps = Object.keys(STEPS).length;
   const currentStepIndex = Object.keys(STEPS).indexOf(currentStep) + 1;
 
-  const handleStepClick = (step: NovelSetupStep) => {
-    const steps = Object.keys(STEPS) as NovelSetupStep[];
+  const handleStepClick = (step: keyof typeof STEPS) => {
+    const steps = Object.keys(STEPS) as Array<keyof typeof STEPS>;
     const currentIndex = steps.indexOf(currentStep);
     const targetIndex = steps.indexOf(step);
     
     if (targetIndex <= currentIndex) {
       setCurrentStep(step);
+      setShowPreview(false);
     }
   };
 
   const handleNext = () => {
-    const steps = Object.keys(STEPS) as NovelSetupStep[];
+    const steps = Object.keys(STEPS) as Array<keyof typeof STEPS>;
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
+    } else {
+      setShowPreview(true);
     }
   };
 
   const handlePrevious = () => {
-    const steps = Object.keys(STEPS) as NovelSetupStep[];
+    if (showPreview) {
+      setShowPreview(false);
+      return;
+    }
+    const steps = Object.keys(STEPS) as Array<keyof typeof STEPS>;
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
@@ -77,6 +87,10 @@ const NovelSetup = () => {
   };
 
   const renderCurrentStep = () => {
+    if (showPreview) {
+      return <NovelPreviewStep form={form} onBack={() => setShowPreview(false)} />;
+    }
+
     switch (currentStep) {
       case 'core-structure':
         return <CoreStructureStep form={form} />;
@@ -100,28 +114,33 @@ const NovelSetup = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <NovelSetupHeader />
-      
-      <NovelSetupProgress 
-        currentStep={currentStep}
-        currentStepIndex={currentStepIndex}
-        totalSteps={totalSteps}
-      />
-
-      <Card className="p-6">
-        <form onSubmit={(e) => e.preventDefault()}>
-          {renderCurrentStep()}
-          
-          <NovelSetupNavigation
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <NovelSetupHeader />
+        
+        {!showPreview && (
+          <NovelSetupProgress 
+            currentStep={currentStep}
             currentStepIndex={currentStepIndex}
             totalSteps={totalSteps}
-            onPrevious={handlePrevious}
-            onNext={handleNext}
           />
-        </form>
-      </Card>
-    </div>
+        )}
+
+        <Card className="p-6">
+          <form onSubmit={(e) => e.preventDefault()}>
+            {renderCurrentStep()}
+            
+            <NovelSetupNavigation
+              currentStepIndex={currentStepIndex}
+              totalSteps={totalSteps}
+              onPrevious={handlePrevious}
+              onNext={handleNext}
+              showPreview={showPreview}
+            />
+          </form>
+        </Card>
+      </div>
+    </DashboardLayout>
   );
 };
 

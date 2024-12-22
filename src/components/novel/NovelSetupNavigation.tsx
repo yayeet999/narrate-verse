@@ -7,28 +7,32 @@ interface NovelSetupNavigationProps {
   totalSteps: number;
   onPrevious: () => void;
   onNext: () => void;
+  showPreview?: boolean;
 }
 
 export function NovelSetupNavigation({ 
   currentStepIndex, 
   totalSteps, 
   onPrevious, 
-  onNext 
+  onNext,
+  showPreview 
 }: NovelSetupNavigationProps) {
   return (
     <div className="flex justify-between mt-6">
       <Button
         variant="ghost"
         onClick={onPrevious}
-        disabled={currentStepIndex === 1}
+        disabled={currentStepIndex === 1 && !showPreview}
       >
         <ChevronLeft className="mr-2 h-4 w-4" />
-        Previous
+        {showPreview ? 'Back to Settings' : 'Previous'}
       </Button>
-      <Button onClick={onNext}>
-        {currentStepIndex === totalSteps ? 'Complete' : 'Next'}
-        <ChevronRight className="ml-2 h-4 w-4" />
-      </Button>
+      {!showPreview && (
+        <Button onClick={onNext}>
+          {currentStepIndex === totalSteps ? 'Preview' : 'Next'}
+          <ChevronRight className="ml-2 h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }
