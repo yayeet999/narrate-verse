@@ -11,6 +11,7 @@ import Signup from "./pages/auth/Signup";
 import Dashboard from "./pages/Dashboard";
 import PricingPage from "./pages/Pricing";
 import ReferenceChunks from "./pages/dashboard/ReferenceChunks";
+import NovelBuffer from "./pages/dashboard/NovelBuffer";
 
 function ScrollToTop() {
   const location = useLocation();
