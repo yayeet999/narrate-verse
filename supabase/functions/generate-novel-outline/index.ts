@@ -722,11 +722,43 @@ serve(async (req) => {
       apiKey: openAiKey,
     });
 
-    // Generate base outline
+    // Generate base outline with strict JSON formatting instructions
     console.log('Starting base outline generation...');
     const baseOutlineCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
+        { 
+          role: "system", 
+          content: `You are a novel outline generator that MUST return ONLY valid JSON following this exact schema:
+{
+  "title": "string",
+  "storyDescription": "string",
+  "chapters": [
+    {
+      "chapterNumber": "number",
+      "chapterName": "string",
+      "chapterSummary": "string",
+      "keyPlotPoints": ["string"]
+    }
+  ],
+  "characters": [
+    {
+      "name": "string",
+      "role": "string",
+      "characterArc": "string"
+    }
+  ],
+  "themes": ["string"],
+  "worldDetails": {
+    "setting": "string",
+    "worldComplexity": "number",
+    "culturalDepth": "number"
+  },
+  "additionalNotes": "string"
+}
+
+Do not include any explanations or text outside of the JSON structure.`
+        },
         { 
           role: "system", 
           content: NOVEL_GENERATION_PROMPT.replace(
@@ -749,7 +781,9 @@ serve(async (req) => {
 
     let baseOutline;
     try {
-      baseOutline = JSON.parse(baseOutlineCompletion.choices[0].message.content);
+      const content = baseOutlineCompletion.choices[0].message.content.trim();
+      console.log('Raw OpenAI response:', content);
+      baseOutline = JSON.parse(content);
       console.log('Base outline generated successfully');
     } catch (parseError) {
       console.error('Failed to parse base outline:', parseError);
@@ -757,7 +791,7 @@ serve(async (req) => {
       throw new Error('Invalid base outline format');
     }
 
-    // Generate refinements
+    // Generate refinements with strict JSON formatting
     console.log('Starting refinements generation...');
     const refinementPrompt = `
     Analyze and enhance the following novel outline with deeper layers of:
@@ -769,8 +803,16 @@ serve(async (req) => {
     - Conflict escalation (layers, progression)
     - Relationship dynamics (character connections, evolution)
 
-    Important: Do NOT change any existing plot points, characters, or story elements.
-    Only add depth and enhancement to what's already there.
+    Important: Return ONLY valid JSON with the refinements following this exact schema:
+    {
+      "refinements": {
+        "narrativeEnhancements": ["string"],
+        "psychologicalLayers": ["string"],
+        "thematicPatterns": ["string"],
+        "atmosphericDetails": ["string"],
+        "relationshipDynamics": ["string"]
+      }
+    }
 
     Base outline:
     ${JSON.stringify(baseOutline, null, 2)}
@@ -781,7 +823,7 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are a literary analysis expert who enhances story outlines with deeper layers of complexity while preserving their original structure and events."
+          content: "You are a literary analysis expert who enhances story outlines with deeper layers of complexity. Return ONLY valid JSON following the specified schema."
         },
         {
           role: "user",
@@ -798,7 +840,9 @@ serve(async (req) => {
 
     let refinements;
     try {
-      refinements = JSON.parse(refinementCompletion.choices[0].message.content);
+      const content = refinementCompletion.choices[0].message.content.trim();
+      console.log('Raw refinements response:', content);
+      refinements = JSON.parse(content);
       console.log('Refinements generated successfully');
     } catch (parseError) {
       console.error('Failed to parse refinements:', parseError);
