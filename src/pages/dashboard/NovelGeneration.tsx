@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import DashboardLayout from '@/components/DashboardLayout';
 
 interface LocationState {
   sessionId?: string;
@@ -99,9 +100,9 @@ const NovelGeneration = () => {
     return () => clearInterval(interval);
   }, [sessionId, navigate]);
 
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+  const renderContent = () => {
+    if (error) {
+      return (
         <Card className="p-6">
           <div className="text-center">
             <p className="text-red-500 mb-4">{error}</p>
@@ -110,11 +111,21 @@ const NovelGeneration = () => {
             </Button>
           </div>
         </Card>
-      </div>
-    );
-  }
+      );
+    }
 
-  const renderOutline = () => {
+    if (isLoading) {
+      return (
+        <Card className="p-6">
+          <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="text-muted-foreground">Generating your novel outline...</p>
+            <p className="text-sm text-muted-foreground">This may take a few minutes.</p>
+          </div>
+        </Card>
+      );
+    }
+
     if (!outline) return null;
 
     return (
@@ -160,35 +171,27 @@ const NovelGeneration = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/dashboard/create/novel/setup')}
-          className="mb-4"
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Setup
-        </Button>
+    <DashboardLayout>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard/create/novel/setup')}
+            className="mb-4"
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Back to Setup
+          </Button>
 
-        <h1 className="text-3xl font-bold tracking-tight">Novel Generation</h1>
-        <p className="text-muted-foreground">
-          {isLoading ? 'Generating your novel outline...' : 'Review your generated outline'}
-        </p>
+          <h1 className="text-3xl font-bold tracking-tight">Novel Generation</h1>
+          <p className="text-muted-foreground">
+            {isLoading ? 'Generating your novel outline...' : 'Review your generated outline'}
+          </p>
+        </div>
+
+        {renderContent()}
       </div>
-
-      <Card className="p-6">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground">Generating your novel outline...</p>
-            <p className="text-sm text-muted-foreground">This may take a few minutes.</p>
-          </div>
-        ) : (
-          renderOutline()
-        )}
-      </Card>
-    </div>
+    </DashboardLayout>
   );
 };
 
