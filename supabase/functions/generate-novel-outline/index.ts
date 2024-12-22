@@ -691,7 +691,6 @@ serve(async (req) => {
       throw new Error('OpenAI API key is not configured');
     }
 
-    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
@@ -700,10 +699,9 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-
     const { parameters, sessionId } = await req.json();
     
-    console.log('Generating novel outline with parameters:', {
+    console.log('Generating enhanced novel outline with parameters:', {
       sessionId,
       parameterSummary: {
         title: parameters.title,
@@ -717,56 +715,77 @@ serve(async (req) => {
       apiKey: openAiKey,
     });
 
-    const systemPrompt = NOVEL_GENERATION_PROMPT.replace(
-      '${JSON.stringify(parameters, null, 2)}',
-      JSON.stringify(parameters, null, 2)
-    );
-
-    const userPrompt = "Utilize the provided parameters, reference guide, and weighting system to generate a highly detailed and structured novel outline. Ensure that the outline reflects the enhanced parameters and adheres to the specified guidelines for depth, complexity, and thematic coherence.";
-
-    console.log('Sending request to OpenAI with enhanced prompt structure');
-
-    const completion = await openai.chat.completions.create({
+    // Generate base outline
+    const baseOutlineCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
+        { 
+          role: "system", 
+          content: NOVEL_GENERATION_PROMPT.replace(
+            '${JSON.stringify(parameters, null, 2)}',
+            JSON.stringify(parameters, null, 2)
+          )
+        },
+        { 
+          role: "user", 
+          content: "Generate the initial novel outline following the provided parameters and guidelines." 
+        }
       ],
       temperature: 0.7
     });
 
-    let responseContent = completion.choices[0].message.content;
-    
-    if (responseContent.includes('```json')) {
-      responseContent = responseContent.replace(/```json\n|\n```/g, '');
-    }
-    
-    responseContent = responseContent.trim();
-    
-    let outline;
-    try {
-      outline = JSON.parse(responseContent);
-      console.log('Successfully parsed outline JSON');
-    } catch (parseError) {
-      console.error('Failed to parse outline JSON:', parseError);
-      throw new Error(`Failed to parse outline JSON: ${parseError.message}`);
-    }
+    let baseOutline = JSON.parse(baseOutlineCompletion.choices[0].message.content);
+    console.log('Base outline generated successfully');
 
-    const { data: session, error: sessionError } = await supabase
-      .from('story_generation_sessions')
-      .select('status')
-      .eq('id', sessionId)
-      .single();
+    // Generate refinements
+    const refinementPrompt = `
+    Analyze and enhance the following novel outline with deeper layers of:
+    - Narrative intensification (tension points, pacing analysis)
+    - Psychological complexity (character depth, decision points)
+    - Thematic reverberation (patterns, contrasts)
+    - Power dynamics (structures, hierarchies)
+    - Atmospheric detail (location moods, environmental themes)
+    - Conflict escalation (layers, progression)
+    - Relationship dynamics (character connections, evolution)
 
-    if (sessionError) throw sessionError;
+    Important: Do NOT change any existing plot points, characters, or story elements.
+    Only add depth and enhancement to what's already there.
 
-    // Store the generated outline
+    Base outline:
+    ${JSON.stringify(baseOutline, null, 2)}
+    `;
+
+    const refinementCompletion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a literary analysis expert who enhances story outlines with deeper layers of complexity while preserving their original structure and events."
+        },
+        {
+          role: "user",
+          content: refinementPrompt
+        }
+      ],
+      temperature: 0.7
+    });
+
+    const refinements = JSON.parse(refinementCompletion.choices[0].message.content);
+    console.log('Refinements generated successfully');
+
+    // Merge refinements into base outline
+    const enhancedOutline = {
+      ...baseOutline,
+      refinements: refinements.refinements
+    };
+
+    // Store the enhanced outline
     const { error: storeError } = await supabase
       .from('story_generation_data')
       .insert({
         session_id: sessionId,
         data_type: 'outline',
-        content: JSON.stringify(outline)
+        content: JSON.stringify(enhancedOutline)
       });
 
     if (storeError) throw storeError;
@@ -779,7 +798,7 @@ serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    console.log('Successfully stored outline and updated session status');
+    console.log('Successfully stored enhanced outline and updated session status');
 
     return new Response(
       JSON.stringify({ success: true }),

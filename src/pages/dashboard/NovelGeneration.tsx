@@ -31,6 +31,28 @@ interface NovelOutline {
     worldComplexity: number;
     culturalDepth: number;
   };
+  refinements?: {
+    narrativeIntensification?: {
+      tensionPoints: Array<{
+        chapter: number;
+        intensity: number;
+        emotionalImpact: string;
+        buildupNotes: string;
+      }>;
+      pacingAnalysis: string;
+      dramaticPeaks: string[];
+    };
+    psychologicalComplexity?: {
+      characterDepth: Array<{
+        character: string;
+        internalConflicts: string[];
+        motivationLayers: string[];
+        backstoryInfluences: string[];
+      }>;
+      decisionPoints: string[];
+    };
+    // Additional refinement categories can be added here
+  };
   additionalNotes: string;
 }
 
@@ -197,11 +219,58 @@ const NovelGeneration = () => {
           ))}
         </div>
 
-        {outline.additionalNotes && (
-          <Card className="p-4">
-            <h3 className="text-lg font-medium mb-2">Additional Notes</h3>
-            <p className="text-sm text-muted-foreground">{outline.additionalNotes}</p>
-          </Card>
+        {outline.refinements && (
+          <>
+            <Card className="p-4">
+              <h3 className="text-lg font-medium mb-2">Narrative Analysis</h3>
+              {outline.refinements.narrativeIntensification && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium">Tension Points</h4>
+                    {outline.refinements.narrativeIntensification.tensionPoints.map((point, index) => (
+                      <div key={index} className="mt-2">
+                        <p className="text-sm">Chapter {point.chapter}: {point.emotionalImpact}</p>
+                        <p className="text-sm text-muted-foreground">{point.buildupNotes}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Pacing Analysis</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {outline.refinements.narrativeIntensification.pacingAnalysis}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-4">
+              <h3 className="text-lg font-medium mb-2">Character Depth</h3>
+              {outline.refinements.psychologicalComplexity?.characterDepth.map((char, index) => (
+                <div key={index} className="mb-4 last:mb-0">
+                  <h4 className="font-medium">{char.character}</h4>
+                  <div className="mt-2 space-y-2">
+                    <div>
+                      <p className="text-sm font-medium">Internal Conflicts</p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground">
+                        {char.internalConflicts.map((conflict, i) => (
+                          <li key={i}>{conflict}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Motivation Layers</p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground">
+                        {char.motivationLayers.map((layer, i) => (
+                          <li key={i}>{layer}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </Card>
+          </>
         )}
       </div>
     );
