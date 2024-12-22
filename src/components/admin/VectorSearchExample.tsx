@@ -4,11 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { searchNovelParameters, generateEmbedding } from '@/utils/vectorSearch';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export function VectorSearchExample() {
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const handleSearch = async () => {
     try {
@@ -25,6 +27,23 @@ export function VectorSearchExample() {
     }
   };
 
+  const generateParameterEmbeddings = async () => {
+    try {
+      setIsGenerating(true);
+      const { error } = await supabase.functions.invoke('generate-parameter-embeddings');
+      
+      if (error) throw error;
+      
+      toast.success('Started generating embeddings for parameters');
+      console.log('Parameter embeddings generation initiated');
+    } catch (error) {
+      console.error('Failed to generate parameter embeddings:', error);
+      toast.error('Failed to generate parameter embeddings');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
@@ -38,6 +57,15 @@ export function VectorSearchExample() {
           {isSearching ? 'Searching...' : 'Search'}
         </Button>
       </div>
+
+      <Button 
+        onClick={generateParameterEmbeddings} 
+        disabled={isGenerating}
+        variant="outline"
+        className="w-full"
+      >
+        {isGenerating ? 'Generating Embeddings...' : 'Generate Parameter Embeddings'}
+      </Button>
 
       <div className="space-y-2">
         {results.map((result) => (
