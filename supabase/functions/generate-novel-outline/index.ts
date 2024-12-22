@@ -1,6 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import OpenAI from "https://deno.land/x/openai@v4.24.0/mod.ts";
 
 const corsHeaders = {
@@ -21,31 +20,38 @@ serve(async (req) => {
 
     const { parameters, parameterReference, dimensions, sessionId } = await req.json();
     
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
+    console.log('Generating novel outline with parameters:', {
+      sessionId,
+      parameterSummary: {
+        title: parameters.title,
+        genre: parameters.primaryGenre,
+        length: parameters.novelLength,
+        theme: parameters.primaryTheme
+      }
+    });
+
     const openai = new OpenAI({
       apiKey: openAiKey,
     });
 
-    const systemPrompt = `You are a professional novel outline generator. Using the provided parameters, reference guide, and calculated story dimensions, create a detailed chapter-by-chapter outline.
+    const systemPrompt = `You are an expert in crafting intricate and comprehensive novel outlines, capable of laying the groundwork for full-length, multi-hundred page novels. Your task is to utilize the provided user parameters, reference guide, and weighting system to produce a highly detailed and structured chapter-by-chapter outline.
 
-PARAMETER REFERENCE GUIDE:
+# Parameter Reference Guide
 ${JSON.stringify(parameterReference, null, 2)}
 
-STORY DIMENSIONS:
+# Weighting System
 ${JSON.stringify(dimensions, null, 2)}
 
-USER PARAMETERS:
+# User Parameters
 ${JSON.stringify(parameters, null, 2)}
 
-INSTRUCTIONS:
-1. Use the parameter reference guide to understand the full impact and meaning of each parameter
-2. Use the story dimensions to guide the depth and focus of different aspects
-3. Create a detailed outline that strictly adheres to the user's chosen parameters
-4. Ensure the outline maintains consistency with genre conventions and thematic elements
-5. Generate an outline that follows this exact JSON structure:
+# Instructions
+1. Thoroughly analyze the parameter reference guide to fully comprehend the significance and potential impact of each parameter on the narrative structure.
+2. Apply the weighting system meticulously to enhance the user parameters, ensuring they align with the desired story dimensions and thematic depth.
+3. Use the enhanced parameters to inform the narrative's depth, focus, and complexity, ensuring a balanced and engaging storyline.
+4. Construct a detailed and coherent outline that not only adheres to the user's enhanced parameters but also elevates the narrative to meet high genre standards and thematic elements.
+5. Maintain consistency with genre conventions, ensuring thematic and stylistic coherence throughout the outline.
+6. Generate the outline in the specified JSON format, ensuring each chapter is thoroughly detailed and logically structured:
 {
   "chapters": [{
     "chapterNumber": number,
@@ -66,7 +72,9 @@ INSTRUCTIONS:
   }
 }`;
 
-    const userPrompt = "Generate a detailed novel outline following the provided parameters and guidelines.";
+    const userPrompt = "Utilize the provided parameters, reference guide, and weighting system to generate a highly detailed and structured novel outline. Ensure that the outline reflects the enhanced parameters and adheres to the specified guidelines for depth, complexity, and thematic coherence.";
+
+    console.log('Sending request to OpenAI with enhanced prompt structure');
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -88,9 +96,19 @@ INSTRUCTIONS:
     let outline;
     try {
       outline = JSON.parse(responseContent);
+      console.log('Successfully parsed outline JSON');
     } catch (parseError) {
+      console.error('Failed to parse outline JSON:', parseError);
       throw new Error(`Failed to parse outline JSON: ${parseError.message}`);
     }
+
+    const { data: session, error: sessionError } = await supabase
+      .from('story_generation_sessions')
+      .select('status')
+      .eq('id', sessionId)
+      .single();
+
+    if (sessionError) throw sessionError;
 
     // Store the generated outline
     const { error: storeError } = await supabase
@@ -110,6 +128,8 @@ INSTRUCTIONS:
       .eq('id', sessionId);
 
     if (updateError) throw updateError;
+
+    console.log('Successfully stored outline and updated session status');
 
     return new Response(
       JSON.stringify({ success: true }),
