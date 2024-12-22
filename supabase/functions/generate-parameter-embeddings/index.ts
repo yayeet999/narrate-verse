@@ -14,23 +14,20 @@ serve(async (req) => {
   }
 
   try {
-    const openAiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAiKey) {
-      throw new Error('OpenAI API key is not configured');
-    }
-
-    // Initialize clients
+    console.log('Starting parameter embedding generation...');
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
-    console.log('Initializing OpenAI client...');
-    const openai = new OpenAI({
-      apiKey: openAiKey,
-    });
+    const openAiKey = Deno.env.get('OPENAI_API_KEY')!;
 
-    // Get parameters without embeddings
-    console.log('Fetching parameters without embeddings...');
+    if (!openAiKey) {
+      throw new Error('OpenAI API key not configured');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const openai = new OpenAI({ apiKey: openAiKey });
+
+    // Fetch parameters that need embeddings
     const { data: parameters, error: fetchError } = await supabase
       .from('novel_parameter_references')
       .select('*')
@@ -40,41 +37,60 @@ serve(async (req) => {
       throw fetchError;
     }
 
-    console.log(`Found ${parameters?.length || 0} parameters without embeddings`);
+    console.log(`Found ${parameters?.length || 0} parameters needing embeddings`);
 
-    // Process each parameter
-    for (const param of parameters || []) {
-      const text = `${param.category} parameter: ${param.parameter_key}
-Description: ${param.description}
-Weight: ${param.weight}`;
+    if (!parameters || parameters.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No parameters need embedding generation' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-      console.log(`Generating embedding for parameter: ${param.parameter_key}`);
-      
-      const embeddingResponse = await openai.embeddings.create({
-        model: "text-embedding-ada-002",
-        input: text,
-      });
+    // Process parameters in batches to avoid rate limits
+    const batchSize = 5;
+    for (let i = 0; i < parameters.length; i += batchSize) {
+      const batch = parameters.slice(i, i + batchSize);
+      console.log(`Processing batch ${i / batchSize + 1} of ${Math.ceil(parameters.length / batchSize)}`);
 
-      const embedding = embeddingResponse.data[0].embedding;
-      
-      // Update the parameter with its embedding
-      const { error: updateError } = await supabase
-        .from('novel_parameter_references')
-        .update({ embedding: embedding })
-        .eq('id', param.id);
+      await Promise.all(batch.map(async (param) => {
+        try {
+          // Create a rich text representation of the parameter
+          const paramText = `Category: ${param.category}\nKey: ${param.parameter_key}\nDescription: ${param.description}\nWeight: ${param.weight}`;
+          
+          // Generate embedding
+          const embeddingResponse = await openai.embeddings.create({
+            model: "text-embedding-ada-002",
+            input: paramText,
+          });
 
-      if (updateError) {
-        console.error(`Error updating parameter ${param.id}:`, updateError);
-        continue;
+          const embedding = embeddingResponse.data[0].embedding;
+
+          // Update the parameter with its embedding
+          const { error: updateError } = await supabase
+            .from('novel_parameter_references')
+            .update({ embedding })
+            .eq('id', param.id);
+
+          if (updateError) {
+            console.error(`Error updating embedding for parameter ${param.id}:`, updateError);
+          } else {
+            console.log(`Successfully generated embedding for parameter ${param.id}`);
+          }
+        } catch (error) {
+          console.error(`Error processing parameter ${param.id}:`, error);
+        }
+      }));
+
+      // Add a small delay between batches to respect rate limits
+      if (i + batchSize < parameters.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-
-      console.log(`Successfully updated embedding for parameter: ${param.parameter_key}`);
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Processed ${parameters?.length || 0} parameters` 
+        message: `Processed ${parameters.length} parameters` 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
