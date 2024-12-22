@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import OpenAI from "https://deno.land/x/openai@v4.24.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,6 +22,11 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: Deno.env.get('OPENAI_API_KEY')!,
+    });
+
     // Get session data
     const { data: session, error: sessionError } = await supabase
       .from('story_generation_sessions')
@@ -28,11 +34,24 @@ serve(async (req) => {
       .eq('id', sessionId)
       .single();
 
-    if (sessionError) throw sessionError;
+    if (sessionError) {
+      console.error('Error fetching session:', sessionError);
+      throw sessionError;
+    }
+    
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
     console.log('Retrieved session parameters:', session.parameters);
 
     // Generate embedding for vector search
-    const embedding = await generateEmbedding(JSON.stringify(session.parameters));
+    const embeddingResponse = await openai.embeddings.create({
+      model: "text-embedding-ada-002",
+      input: JSON.stringify(session.parameters),
+    });
+
+    const embedding = embeddingResponse.data[0].embedding;
     console.log('Generated embedding for vector search');
 
     // Search for relevant reference chunks
@@ -42,11 +61,64 @@ serve(async (req) => {
       match_count: 10
     });
 
-    if (searchError) throw searchError;
+    if (searchError) {
+      console.error('Error searching for reference chunks:', searchError);
+      throw searchError;
+    }
+
     console.log('Found matching reference chunks:', chunks.length);
 
+    // Prepare the prompt for outline generation
+    const systemPrompt = `You are a professional novel outline generator. Create a detailed novel outline based on the provided parameters and reference materials. The outline should include:
+    1. Overall structure
+    2. Chapter breakdowns with titles and summaries
+    3. Key plot points and scenes
+    4. Character arcs and interactions
+    5. Thematic elements
+
+    Format the response as a JSON object with the following structure:
+    {
+      "chapters": [{
+        "chapterNumber": number,
+        "title": string,
+        "summary": string,
+        "scenes": [{
+          "id": string,
+          "sceneFocus": string,
+          "conflict": string,
+          "settingDetails": string,
+          "characterInvolvement": string[]
+        }]
+      }],
+      "metadata": {
+        "totalEstimatedWordCount": number,
+        "mainTheme": string,
+        "creationTimestamp": string
+      }
+    }`;
+
+    const userPrompt = `
+    Novel Parameters:
+    ${JSON.stringify(session.parameters, null, 2)}
+
+    Reference Materials:
+    ${chunks.map(chunk => chunk.content).join('\n\n')}
+
+    Generate a comprehensive novel outline following these specifications.`;
+
+    console.log('Sending request to OpenAI');
+
     // Generate outline using OpenAI
-    const outline = await generateOutline(session.parameters, chunks);
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      temperature: 0.7
+    });
+
+    const outline = JSON.parse(completion.choices[0].message.content);
     console.log('Generated novel outline');
 
     // Store the generated outline
@@ -58,7 +130,10 @@ serve(async (req) => {
         content: JSON.stringify(outline)
       });
 
-    if (storeError) throw storeError;
+    if (storeError) {
+      console.error('Error storing outline:', storeError);
+      throw storeError;
+    }
 
     // Update session status
     const { error: updateError } = await supabase
@@ -66,7 +141,12 @@ serve(async (req) => {
       .update({ status: 'completed' })
       .eq('id', sessionId);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      console.error('Error updating session status:', updateError);
+      throw updateError;
+    }
+
+    console.log('Successfully completed novel generation');
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -76,7 +156,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in generate-novel-outline:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: error.stack
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -84,63 +167,3 @@ serve(async (req) => {
     );
   }
 });
-
-async function generateEmbedding(text: string): Promise<number[]> {
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-  
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openaiApiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      input: text,
-      model: "text-embedding-ada-002"
-    })
-  });
-
-  const data = await response.json();
-  return data.data[0].embedding;
-}
-
-async function generateOutline(parameters: any, referenceChunks: any[]): Promise<any> {
-  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-  
-  const systemPrompt = `You are a professional novel outline generator. Create a detailed novel outline based on the provided parameters and reference materials. The outline should include:
-  1. Overall structure
-  2. Chapter breakdowns
-  3. Key plot points
-  4. Character arcs
-  5. Thematic elements
-
-  Use the reference materials to inform the genre conventions, writing style, and structural elements.`;
-
-  const userPrompt = `
-  Novel Parameters:
-  ${JSON.stringify(parameters, null, 2)}
-
-  Reference Materials:
-  ${referenceChunks.map(chunk => chunk.content).join('\n\n')}
-
-  Generate a comprehensive novel outline following these specifications.`;
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openaiApiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature: 0.7
-    })
-  });
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
-}
