@@ -1,18 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { BookOpen, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { getUserSubscriptionStatus } from "@/utils/subscriptionUtils";
-import { toast } from "sonner";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 
 const NovelBuffer = () => {
   const navigate = useNavigate();
@@ -36,51 +27,8 @@ const NovelBuffer = () => {
     );
   }
 
-  // Check if user has paid access
-  const hasPaidAccess = subscription?.isPaid;
-
-  if (!hasPaidAccess) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card className="p-6 space-y-4">
-          <div className="flex items-center justify-center">
-            <AlertCircle className="h-12 w-12 text-destructive" />
-          </div>
-          <h1 className="text-2xl font-bold text-center">Premium Feature</h1>
-          <p className="text-center text-muted-foreground">
-            Novel generation is available exclusively for premium users.
-            Upgrade your subscription to access this feature.
-          </p>
-          <div className="flex justify-center">
-            <Button onClick={() => navigate('/pricing')}>
-              View Pricing
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink onClick={() => navigate('/dashboard')}>Dashboard</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink onClick={() => navigate('/dashboard/create')}>Create</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Novel</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
       <Card className="p-8">
         <div className="space-y-6">
           <div className="flex justify-center">
