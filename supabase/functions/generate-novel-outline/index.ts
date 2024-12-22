@@ -8,6 +8,35 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validation function for outline structure
+function validateOutlineStructure(outline: any): boolean {
+  try {
+    // Check basic structure
+    if (!outline.chapters || !Array.isArray(outline.chapters)) return false;
+    if (!outline.metadata) return false;
+
+    // Validate each chapter
+    for (const chapter of outline.chapters) {
+      if (!chapter.chapterNumber || !chapter.title || !chapter.summary) return false;
+      if (!chapter.scenes || !Array.isArray(chapter.scenes)) return false;
+
+      // Validate each scene
+      for (const scene of chapter.scenes) {
+        if (!scene.id || !scene.sceneFocus || !scene.conflict || !scene.settingDetails) return false;
+        if (!scene.characterInvolvement || !Array.isArray(scene.characterInvolvement)) return false;
+      }
+    }
+
+    // Validate metadata
+    if (!outline.metadata.totalEstimatedWordCount || !outline.metadata.mainTheme) return false;
+
+    return true;
+  } catch (error) {
+    console.error('Validation error:', error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -84,6 +113,16 @@ serve(async (req) => {
     }
 
     console.log('Found matching reference chunks:', chunks.length);
+    
+    // Log relevance scores for debugging
+    chunks.forEach((chunk, index) => {
+      console.log(`Chunk ${index + 1} relevance score:`, chunk.similarity);
+      console.log(`Chunk ${index + 1} category:`, chunk.category);
+    });
+
+    if (chunks.length < 3) {
+      console.warn('Warning: Found fewer than 3 relevant reference chunks');
+    }
 
     // Prepare the prompt for outline generation
     const systemPrompt = `You are a professional novel outline generator. Create a detailed novel outline based on the provided parameters and reference materials. The outline should include:
@@ -160,6 +199,11 @@ serve(async (req) => {
     
     console.log('Successfully parsed outline JSON');
 
+    // Validate outline structure
+    if (!validateOutlineStructure(outline)) {
+      throw new Error('Generated outline does not match required structure');
+    }
+
     // Store the generated outline
     console.log('Storing generated outline...');
     const { error: storeError } = await supabase
@@ -196,15 +240,12 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-novel-outline:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.stack
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: error.stack
+    }), { 
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
