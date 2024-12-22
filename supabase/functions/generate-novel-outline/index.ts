@@ -15,6 +15,8 @@ serve(async (req) => {
 
   try {
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('Checking OpenAI API key configuration...');
+    
     if (!openAiKey) {
       console.error('OpenAI API key is not set');
       throw new Error('OpenAI API key is not configured. Please set it in the Supabase dashboard.');
@@ -34,11 +36,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Initialize OpenAI client
+    console.log('Initializing OpenAI client...');
     const openai = new OpenAI({
       apiKey: openAiKey,
     });
 
     // Get session data
+    console.log('Fetching session data...');
     const { data: session, error: sessionError } = await supabase
       .from('story_generation_sessions')
       .select('parameters, user_id')
@@ -57,6 +61,7 @@ serve(async (req) => {
     console.log('Retrieved session parameters:', session.parameters);
 
     // Generate embedding for vector search
+    console.log('Generating embedding for vector search...');
     const embeddingResponse = await openai.embeddings.create({
       model: "text-embedding-ada-002",
       input: JSON.stringify(session.parameters),
@@ -66,6 +71,7 @@ serve(async (req) => {
     console.log('Generated embedding for vector search');
 
     // Search for relevant reference chunks
+    console.log('Searching for reference chunks...');
     const { data: chunks, error: searchError } = await supabase.rpc('match_story_chunks', {
       query_embedding: embedding,
       match_threshold: 0.7,
@@ -108,31 +114,32 @@ serve(async (req) => {
       }
     }`;
 
-    const userPrompt = `
-    Novel Parameters:
-    ${JSON.stringify(session.parameters, null, 2)}
-
-    Reference Materials:
-    ${chunks.map(chunk => chunk.content).join('\n\n')}
-
-    Generate a comprehensive novel outline following these specifications.`;
-
-    console.log('Sending request to OpenAI');
+    console.log('Sending request to OpenAI...');
 
     // Generate outline using OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
+        { role: "user", content: `
+          Novel Parameters:
+          ${JSON.stringify(session.parameters, null, 2)}
+
+          Reference Materials:
+          ${chunks.map(chunk => chunk.content).join('\n\n')}
+
+          Generate a comprehensive novel outline following these specifications.`
+        }
       ],
       temperature: 0.7
     });
 
+    console.log('Received response from OpenAI');
     const outline = JSON.parse(completion.choices[0].message.content);
-    console.log('Generated novel outline');
+    console.log('Successfully parsed outline JSON');
 
     // Store the generated outline
+    console.log('Storing generated outline...');
     const { error: storeError } = await supabase
       .from('story_generation_data')
       .insert({
@@ -147,6 +154,7 @@ serve(async (req) => {
     }
 
     // Update session status
+    console.log('Updating session status...');
     const { error: updateError } = await supabase
       .from('story_generation_sessions')
       .update({ status: 'completed' })
