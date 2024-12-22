@@ -15,13 +15,14 @@ import {
 } from "@/components/ui/breadcrumb";
 import { CoreStructureStep } from '@/components/novel/CoreStructureStep';
 import { GenreThemeStep } from '@/components/novel/GenreThemeStep';
+import { SettingWorldStep } from '@/components/novel/SettingWorldStep';
 import type { NovelParameters } from '@/types/novel';
 
 type NovelSetupStep = 
   | 'core-structure'
   | 'genre-theme'
+  | 'setting-world'
   | 'characters'
-  | 'setting'
   | 'narrative'
   | 'writing-style'
   | 'technical'
@@ -37,13 +38,13 @@ const STEPS: Record<NovelSetupStep, { title: string; description: string }> = {
     title: 'Genre & Theme',
     description: 'Choose your genres and themes'
   },
+  'setting-world': {
+    title: 'Setting & World',
+    description: 'Build your world'
+  },
   'characters': {
     title: 'Characters',
     description: 'Create your cast of characters'
-  },
-  'setting': {
-    title: 'Setting & World',
-    description: 'Build your world'
   },
   'narrative': {
     title: 'Narrative Style',
@@ -134,6 +135,8 @@ const NovelSetup = () => {
         return <CoreStructureStep form={form} />;
       case 'genre-theme':
         return <GenreThemeStep form={form} />;
+      case 'setting-world':
+        return <SettingWorldStep form={form} />;
       default:
         return <div>Step {currentStep} is under construction</div>;
     }
