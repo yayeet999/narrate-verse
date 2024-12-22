@@ -592,7 +592,7 @@ Let \`p_i\` be the set of parameter influences in dimension \`d\`. Let \`C_i\` b
 1. Thoroughly analyze the parameter reference guide to fully comprehend the significance and potential impact of each parameter on the narrative structure.
 2. Apply the weighting system meticulously to enhance the user parameters, ensuring they align with the desired story dimensions and thematic depth.
 3. Use the enhanced parameters to inform the narrative's depth, focus, and complexity, ensuring a balanced and engaging storyline.
-4. Construct a detailed and coherent outline that not only adheres to the user's enhanced parameters but also elevates the narrative to meet high genre standards and thematic elements.
+4. Construct a detailed and coherent outline that not only adheres to the user's enhanced parameters but also elevates the narrative to meet high genre standards and thematic elements. Each chapter summary should be a detailed paragraph of 3-4 sentences describing the key events and atmosphere. Include 5-7 key plot points per chapter to provide a comprehensive breakdown of major story beats.
 5. Maintain consistency with genre conventions, ensuring thematic and stylistic coherence throughout the outline.
 6. Generate the outline in the specified JSON format.
 7. The final output **must always be valid JSON** that strictly follows the schema below:
@@ -640,11 +640,14 @@ Let \`p_i\` be the set of parameter influences in dimension \`d\`. Let \`C_i\` b
     {
       "chapterNumber": 1,
       "chapterName": "The Gathering Storm",
-      "chapterSummary": "Introduction to the hero and the conflict overshadowing Elysium.",
+      "chapterSummary": "Introduction to the hero and the conflict overshadowing Elysium. The kingdom stands on the brink of darkness as ancient prophecies begin to unfold. Our protagonist discovers strange markings appearing throughout the city, while the council of elders remains suspiciously silent about the growing signs of trouble.",
       "keyPlotPoints": [
-        "Protagonist introduced",
-        "Hint of the dark forces at work",
-        "Call to action arises"
+        "Protagonist introduced during the annual harvest festival",
+        "Strange symbols begin appearing on city walls",
+        "First encounter with a mysterious hooded figure",
+        "Council meeting reveals political tensions",
+        "Discovery of an ancient text predicting current events",
+        "Protagonist witnesses supernatural event at city gates"
       ]
     }
   ],
