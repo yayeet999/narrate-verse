@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import OpenAI from "https://deno.land/x/openai@v4.24.0/mod.ts";
 
 const NOVEL_GENERATION_PROMPT = `You are an expert in crafting intricate and comprehensive novel outlines, capable of laying the groundwork for full-length, multi-hundred page novels. Your task is to utilize the provided user parameters, reference guide, and weighting system to produce a highly detailed and structured chapter-by-chapter outline.
@@ -686,6 +687,16 @@ serve(async (req) => {
     if (!openAiKey) {
       throw new Error('OpenAI API key is not configured');
     }
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration is missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { parameters, sessionId } = await req.json();
     
