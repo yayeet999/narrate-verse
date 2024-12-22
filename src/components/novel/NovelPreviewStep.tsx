@@ -6,6 +6,7 @@ import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NovelPreviewStepProps {
   form: UseFormReturn<NovelParameters>;

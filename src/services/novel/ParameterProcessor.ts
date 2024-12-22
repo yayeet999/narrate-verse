@@ -19,7 +19,7 @@ export interface ProcessedDimensions {
 
 export class ParameterProcessor {
   private parameters: NovelParameters;
-  private vectorResults: any; // Will store the vector search results
+  private vectorResults: any;
 
   constructor(parameters: NovelParameters) {
     this.parameters = parameters;
@@ -29,10 +29,7 @@ export class ParameterProcessor {
   async process(): Promise<ProcessedDimensions> {
     console.log('Starting parameter processing');
     
-    // Step A: Vector embedding and context building
     await this.embedAndStoreParameters();
-    
-    // Step B: Apply weighting system
     const dimensions = await this.calculateDimensions();
     
     console.log('Final processed dimensions:', dimensions);
@@ -43,7 +40,6 @@ export class ParameterProcessor {
     console.log('Starting parameter embedding');
     
     try {
-      // Query the vector database for parameter explanations
       const { data: chunks, error } = await supabase.rpc('match_story_chunks', {
         query_embedding: await this.generateParameterEmbedding(),
         match_threshold: 0.7,
@@ -60,11 +56,9 @@ export class ParameterProcessor {
     }
   }
 
-  private async generateParameterEmbedding(): Promise<number[]> {
-    // Convert parameters to a string representation for embedding
+  private async generateParameterEmbedding(): Promise<string> {
     const paramString = this.parametersToString();
     
-    // Call the OpenAI embeddings API through our Supabase Edge Function
     const response = await fetch('/api/generate-embedding', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -72,7 +66,8 @@ export class ParameterProcessor {
     });
 
     const { embedding } = await response.json();
-    return embedding;
+    // Convert the embedding array to a string representation that Postgres vector type expects
+    return `[${embedding.join(',')}]`;
   }
 
   private parametersToString(): string {
