@@ -1,9 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 export type SubscriptionStatus = {
   isPaid: boolean;
   maxContent: number;
   features: string[];
+};
+
+const parseFeatures = (features: Json): string[] => {
+  if (Array.isArray(features)) {
+    return features.filter((feature): feature is string => typeof feature === 'string');
+  }
+  console.warn('Features is not an array:', features);
+  return [];
 };
 
 export const getUserSubscriptionStatus = async (): Promise<SubscriptionStatus | null> => {
@@ -44,7 +53,7 @@ export const getUserSubscriptionStatus = async (): Promise<SubscriptionStatus | 
     return {
       isPaid: data.subscription_tiers.type === 'paid',
       maxContent: data.subscription_tiers.max_content_count,
-      features: data.subscription_tiers.features
+      features: parseFeatures(data.subscription_tiers.features)
     };
   } catch (error) {
     console.error('Error in getUserSubscriptionStatus:', error);
