@@ -11,32 +11,33 @@ interface LocationState {
   sessionId?: string;
 }
 
-interface OutlineChapter {
-  chapterNumber: number;
+interface NovelOutline {
   title: string;
-  summary: string;
-  scenes: Array<{
-    id: string;
-    sceneFocus: string;
-    conflict: string;
-    settingDetails: string;
-    characterInvolvement: string[];
+  storyDescription: string;
+  chapters: Array<{
+    chapterNumber: number;
+    chapterName: string;
+    chapterSummary: string;
+    keyPlotPoints: string[];
   }>;
-}
-
-interface Outline {
-  chapters: OutlineChapter[];
-  metadata: {
-    totalEstimatedWordCount: number;
-    mainTheme: string;
-    creationTimestamp: string;
+  characters: Array<{
+    name: string;
+    role: string;
+    characterArc: string;
+  }>;
+  themes: string[];
+  worldDetails: {
+    setting: string;
+    worldComplexity: number;
+    culturalDepth: number;
   };
+  additionalNotes: string;
 }
 
 const NovelGeneration = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [outline, setOutline] = useState<Outline | null>(null);
+  const [outline, setOutline] = useState<NovelOutline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { sessionId } = (location.state as LocationState) || {};
@@ -63,7 +64,6 @@ const NovelGeneration = () => {
         console.log('Session status:', session.status);
 
         if (session.status === 'completed') {
-          // Fetch the generated outline
           const { data: outlineData, error: outlineError } = await supabase
             .from('story_generation_data')
             .select('content')
@@ -85,7 +85,6 @@ const NovelGeneration = () => {
           setError('Generation failed. Please try again.');
           setIsLoading(false);
         }
-        // If still in progress, continue polling
       } catch (error) {
         console.error('Error checking generation status:', error);
         setError('Failed to check generation status');
@@ -93,9 +92,8 @@ const NovelGeneration = () => {
       }
     };
 
-    // Poll for updates every 5 seconds
     const interval = setInterval(checkGenerationStatus, 5000);
-    checkGenerationStatus(); // Initial check
+    checkGenerationStatus();
 
     return () => clearInterval(interval);
   }, [sessionId, navigate]);
@@ -131,41 +129,80 @@ const NovelGeneration = () => {
     return (
       <div className="space-y-6">
         <div className="mb-4">
-          <h2 className="text-xl font-semibold">Novel Outline</h2>
-          <p className="text-muted-foreground">
-            Estimated word count: {outline.metadata.totalEstimatedWordCount}
-          </p>
-          <p className="text-muted-foreground">
-            Main theme: {outline.metadata.mainTheme}
+          <h2 className="text-xl font-semibold">{outline.title}</h2>
+          <p className="text-muted-foreground mt-2">
+            {outline.storyDescription}
           </p>
         </div>
 
-        {outline.chapters.map((chapter) => (
-          <Card key={chapter.chapterNumber} className="p-4">
-            <h3 className="text-lg font-medium mb-2">
-              Chapter {chapter.chapterNumber}: {chapter.title}
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              {chapter.summary}
-            </p>
-            <div className="space-y-4">
-              {chapter.scenes.map((scene) => (
-                <div key={scene.id} className="pl-4 border-l-2 border-muted">
-                  <p className="text-sm font-medium">{scene.sceneFocus}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Conflict: {scene.conflict}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Setting: {scene.settingDetails}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Characters: {scene.characterInvolvement.join(', ')}
-                  </p>
-                </div>
-              ))}
+        <Card className="p-4">
+          <h3 className="text-lg font-medium mb-2">World Details</h3>
+          <p className="text-sm text-muted-foreground mb-2">{outline.worldDetails.setting}</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium">World Complexity</p>
+              <p className="text-sm text-muted-foreground">{outline.worldDetails.worldComplexity}/5</p>
             </div>
+            <div>
+              <p className="text-sm font-medium">Cultural Depth</p>
+              <p className="text-sm text-muted-foreground">{outline.worldDetails.culturalDepth}/5</p>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="text-lg font-medium mb-2">Themes</h3>
+          <div className="flex flex-wrap gap-2">
+            {outline.themes.map((theme, index) => (
+              <span key={index} className="px-2 py-1 bg-muted rounded-md text-sm">
+                {theme}
+              </span>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="text-lg font-medium mb-2">Characters</h3>
+          <div className="space-y-4">
+            {outline.characters.map((character, index) => (
+              <div key={index} className="border-b last:border-0 pb-4 last:pb-0">
+                <p className="font-medium">{character.name}</p>
+                <p className="text-sm text-muted-foreground">Role: {character.role}</p>
+                <p className="text-sm text-muted-foreground">{character.characterArc}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div className="space-y-4">
+          {outline.chapters.map((chapter) => (
+            <Card key={chapter.chapterNumber} className="p-4">
+              <h3 className="text-lg font-medium mb-2">
+                Chapter {chapter.chapterNumber}: {chapter.chapterName}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {chapter.chapterSummary}
+              </p>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Key Plot Points:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  {chapter.keyPlotPoints.map((point, index) => (
+                    <li key={index} className="text-sm text-muted-foreground">
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {outline.additionalNotes && (
+          <Card className="p-4">
+            <h3 className="text-lg font-medium mb-2">Additional Notes</h3>
+            <p className="text-sm text-muted-foreground">{outline.additionalNotes}</p>
           </Card>
-        ))}
+        )}
       </div>
     );
   };
