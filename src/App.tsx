@@ -13,6 +13,7 @@ import PricingPage from "./pages/Pricing";
 import ReferenceChunks from "./pages/dashboard/ReferenceChunks";
 import NovelBuffer from "./pages/dashboard/NovelBuffer";
 import NovelSetup from "./pages/dashboard/NovelSetup";
+import NovelGeneration from "./pages/dashboard/NovelGeneration";
 
 function ScrollToTop() {
   const location = useLocation();
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/dashboard/*" element={<Dashboard />} />
             <Route path="/admin/reference-chunks" element={<ReferenceChunks />} />
             <Route path="/dashboard/create/novel/setup" element={<NovelSetup />} />
+            <Route path="/dashboard/create/novel/generation" element={<NovelGeneration />} />
           </Routes>
         </div>
       </BrowserRouter>

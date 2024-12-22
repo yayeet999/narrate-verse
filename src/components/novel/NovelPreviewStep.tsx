@@ -28,14 +28,27 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
         return;
       }
 
-      // For now, just show a toast - actual generation logic will be added later
-      toast.success('Starting novel generation...');
-      // Will be replaced with actual generation logic and navigation
+      // Create a generation session
+      const { data: generationSession, error: sessionError } = await supabase
+        .from('story_generation_sessions')
+        .insert({
+          user_id: session.user.id,
+          parameters: values,
+          status: 'in_progress'
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // Navigate to the generation page
+      navigate('/dashboard/create/novel/generation', {
+        state: { sessionId: generationSession.id }
+      });
       
     } catch (error) {
       console.error('Error starting novel generation:', error);
       toast.error('Failed to start novel generation');
-    } finally {
       setIsGenerating(false);
     }
   };
@@ -49,43 +62,30 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
         </p>
       </div>
 
-      <div className="grid gap-4">
-        <Card className="p-4">
-          <h3 className="font-medium mb-2">Basic Information</h3>
-          <div className="space-y-2">
-            <div>
-              <span className="text-muted-foreground">Title:</span>
-              <p>{values.title}</p>
-            </div>
-            {values.storyDescription && (
-              <div>
-                <span className="text-muted-foreground">Story Description:</span>
-                <p className="whitespace-pre-wrap">{values.storyDescription}</p>
-              </div>
-            )}
-          </div>
-        </Card>
+      <Card className="p-4">
+        <h3 className="font-medium mb-2">Title</h3>
+        <p>{values.title}</p>
+      </Card>
 
-        <Card className="p-4">
-          <h3 className="font-medium mb-2">Novel Length</h3>
-          <p>{values.novelLength}</p>
-        </Card>
+      <Card className="p-4">
+        <h3 className="font-medium mb-2">Novel Length</h3>
+        <p>{values.novelLength}</p>
+      </Card>
 
-        <Card className="p-4">
-          <h3 className="font-medium mb-2">Chapter Structure</h3>
-          <p>{values.chapterStructure}</p>
-        </Card>
+      <Card className="p-4">
+        <h3 className="font-medium mb-2">Chapter Structure</h3>
+        <p>{values.chapterStructure}</p>
+      </Card>
 
-        <Card className="p-4">
-          <h3 className="font-medium mb-2">Average Chapter Length</h3>
-          <p>{values.averageChapterLength} words</p>
-        </Card>
+      <Card className="p-4">
+        <h3 className="font-medium mb-2">Average Chapter Length</h3>
+        <p>{values.averageChapterLength} words</p>
+      </Card>
 
-        <Card className="p-4">
-          <h3 className="font-medium mb-2">Chapter Naming Style</h3>
-          <p>{values.chapterNamingStyle}</p>
-        </Card>
-      </div>
+      <Card className="p-4">
+        <h3 className="font-medium mb-2">Chapter Naming Style</h3>
+        <p>{values.chapterNamingStyle}</p>
+      </Card>
 
       <div className="flex justify-between pt-6">
         <Button
