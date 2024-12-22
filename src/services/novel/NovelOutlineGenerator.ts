@@ -11,11 +11,13 @@ import {
   validateOutlineStructure 
 } from './validators/OutlineValidators';
 import { NovelChapter, NovelOutline } from './types';
+import { supabase } from '@/integrations/supabase/client';
 
 export class NovelOutlineGenerator {
   private parameters: NovelParameters;
   private dimensions: ProcessedDimensions;
   private vectorResults: VectorChunk[];
+  private parameterWeights: Map<string, number> = new Map();
   private baseChapterCounts: Record<string, number> = {
     '50k-100k': 15,
     '100k-150k': 25,
@@ -40,6 +42,9 @@ export class NovelOutlineGenerator {
   async generateOutline(): Promise<NovelOutline> {
     console.log('Starting outline generation process');
     
+    // Fetch and apply parameter weights
+    await this.fetchParameterWeights();
+    
     const chapterCount = this.calculateChapterCount();
     const chapters: NovelChapter[] = [];
 
@@ -58,8 +63,8 @@ export class NovelOutlineGenerator {
       }
     };
 
-    // Apply dimensional guidance
-    applyDimensionalGuidance(outline, this.dimensions);
+    // Apply dimensional guidance with weighted parameters
+    await this.applyWeightedGuidance(outline);
 
     // Validate structure
     await validateOutlineStructure(outline);
@@ -70,6 +75,64 @@ export class NovelOutlineGenerator {
     });
 
     return outline;
+  }
+
+  private async fetchParameterWeights(): Promise<void> {
+    try {
+      const { data: parameterRefs, error } = await supabase
+        .from('novel_parameter_references')
+        .select('parameter_key, weight')
+        .order('weight', { ascending: false });
+
+      if (error) throw error;
+
+      parameterRefs.forEach(ref => {
+        this.parameterWeights.set(ref.parameter_key, ref.weight);
+      });
+
+      console.log('Fetched parameter weights:', 
+        Object.fromEntries(this.parameterWeights.entries())
+      );
+    } catch (error) {
+      console.error('Error fetching parameter weights:', error);
+      // Use default weights if fetch fails
+      this.initializeDefaultWeights();
+    }
+  }
+
+  private initializeDefaultWeights(): void {
+    const defaultWeights = {
+      'complexity': 1.0,
+      'conflict': 1.0,
+      'emotionalDepth': 1.0,
+      'detail': 1.0,
+      'tone': 1.0,
+      'structuralExpansion': 1.0,
+      'pacing': 1.0,
+      'thematicResonance': 1.0,
+      'culturalCohesion': 1.0,
+      'characterChemistry': 1.0,
+      'genreAuthenticity': 1.0,
+      'narrativeMomentum': 1.0,
+      'worldIntegration': 1.0
+    };
+
+    Object.entries(defaultWeights).forEach(([key, weight]) => {
+      this.parameterWeights.set(key, weight);
+    });
+  }
+
+  private async applyWeightedGuidance(outline: NovelOutline): Promise<void> {
+    // Apply weights to each dimension
+    const weightedDimensions = Object.entries(this.dimensions).reduce(
+      (acc, [key, value]) => ({
+        ...acc,
+        [key]: value * (this.parameterWeights.get(key) || 1.0)
+      }),
+      {} as ProcessedDimensions
+    );
+
+    await applyDimensionalGuidance(outline, weightedDimensions);
   }
 
   private calculateChapterCount(): number {

@@ -1,12 +1,38 @@
 import { ProcessedDimensions } from '../ParameterProcessor';
 import { NovelOutline } from '../types';
 
-export const applyDimensionalGuidance = (
+export const applyDimensionalGuidance = async (
   outline: NovelOutline,
   dimensions: ProcessedDimensions
-): void => {
-  // Apply dimension-based adjustments to the outline
-  console.log('Applying dimensional guidance:', dimensions);
+): Promise<void> => {
+  console.log('Applying dimensional guidance with weights:', dimensions);
+
+  // Apply weighted dimensions to chapter generation
+  outline.chapters = outline.chapters.map(chapter => {
+    const plotPosition = chapter.plotProgression;
+    
+    // Adjust pacing based on weighted dimensions
+    chapter.pacingGuidance = Math.min(5, 
+      chapter.pacingGuidance * (dimensions.pacing / 2.5)
+    );
+
+    // Adjust thematic elements based on weighted dimensions
+    chapter.thematicElements = chapter.thematicElements.map(theme => ({
+      theme,
+      weight: dimensions.thematicResonance / 2.5
+    }));
+
+    // Adjust scenes based on weighted dimensions
+    chapter.scenes = chapter.scenes.map(scene => ({
+      ...scene,
+      pacing: Math.min(5, scene.pacing * (dimensions.narrativeMomentum / 2.5)),
+      tone: Math.min(5, scene.tone * (dimensions.emotionalDepth / 2.5))
+    }));
+
+    return chapter;
+  });
+
+  console.log('Dimensional guidance applied successfully');
 };
 
 export const validateOutlineStructure = async (
