@@ -8,7 +8,161 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Validation function for outline structure
+// Organize reference chunks by category and relevance
+function organizeReferenceChunks(chunks: any[]) {
+  const categories = {
+    genre_conventions: [] as any[],
+    plot_structures: [] as any[],
+    character_development: [] as any[],
+    world_building: [] as any[],
+    thematic_elements: [] as any[],
+    technical_guidelines: [] as any[],
+    other: [] as any[],
+  };
+
+  chunks.forEach(chunk => {
+    const category = chunk.category?.toLowerCase().replace(/[^a-z_]/g, '_') || 'other';
+    const relevanceScore = chunk.similarity || 0;
+    
+    // Only include chunks with good relevance
+    if (relevanceScore >= 0.7) {
+      if (categories[category]) {
+        categories[category].push({
+          content: chunk.content,
+          relevance: relevanceScore
+        });
+      } else {
+        categories.other.push({
+          content: chunk.content,
+          relevance: relevanceScore
+        });
+      }
+    }
+  });
+
+  // Sort each category by relevance
+  Object.keys(categories).forEach(key => {
+    categories[key].sort((a, b) => b.relevance - a.relevance);
+  });
+
+  return categories;
+}
+
+// Build enhanced system prompt using reference materials
+function buildSystemPrompt(parameters: any, referenceChunks: any) {
+  const genreGuidelines = referenceChunks.genre_conventions
+    .map(c => c.content)
+    .slice(0, 3)
+    .join('\n');
+
+  const plotStructures = referenceChunks.plot_structures
+    .map(c => c.content)
+    .slice(0, 3)
+    .join('\n');
+
+  const characterGuidelines = referenceChunks.character_development
+    .map(c => c.content)
+    .slice(0, 3)
+    .join('\n');
+
+  return `You are a professional novel outline generator specializing in ${parameters.primaryGenre} stories.
+
+CONTEXT AND GUIDELINES:
+Genre Conventions:
+${genreGuidelines}
+
+Plot Structure Guidelines:
+${plotStructures}
+
+Character Development Guidelines:
+${characterGuidelines}
+
+STRICT REQUIREMENTS:
+1. Maintain absolute consistency with user parameters
+2. Follow genre conventions while allowing for innovation
+3. Ensure character arcs align with provided archetypes
+4. Balance pacing according to specified preferences
+5. Incorporate thematic elements throughout the outline
+6. Respect content control parameters (violence, adult content, etc.)
+
+TECHNICAL REQUIREMENTS:
+1. Return ONLY a valid JSON object
+2. No markdown or additional text
+3. Must be parseable by JSON.parse()
+4. Follow exact structure:
+{
+  "chapters": [{
+    "chapterNumber": number,
+    "title": string,
+    "summary": string,
+    "scenes": [{
+      "id": string,
+      "sceneFocus": string,
+      "conflict": string,
+      "settingDetails": string,
+      "characterInvolvement": string[]
+    }]
+  }],
+  "metadata": {
+    "totalEstimatedWordCount": number,
+    "mainTheme": string,
+    "creationTimestamp": string
+  }
+}
+
+IMPORTANT GUIDELINES:
+- Each chapter should advance both plot and character development
+- Maintain consistent tone and style throughout
+- Ensure proper setup and payoff for major plot points
+- Balance dialogue, action, and description based on user preferences
+- Incorporate world-building elements naturally into scenes
+- Ensure conflicts escalate properly throughout the outline`;
+}
+
+// Build user prompt incorporating parameters and reference materials
+function buildUserPrompt(parameters: any, referenceChunks: any) {
+  const worldBuildingGuidelines = referenceChunks.world_building
+    .map(c => c.content)
+    .slice(0, 2)
+    .join('\n');
+
+  const thematicGuidelines = referenceChunks.thematic_elements
+    .map(c => c.content)
+    .slice(0, 2)
+    .join('\n');
+
+  const technicalGuidelines = referenceChunks.technical_guidelines
+    .map(c => c.content)
+    .slice(0, 2)
+    .join('\n');
+
+  return `Generate a detailed novel outline following these specifications:
+
+NOVEL PARAMETERS:
+${JSON.stringify(parameters, null, 2)}
+
+WORLD-BUILDING CONSIDERATIONS:
+${worldBuildingGuidelines}
+
+THEMATIC GUIDELINES:
+${thematicGuidelines}
+
+TECHNICAL SPECIFICATIONS:
+${technicalGuidelines}
+
+Additional Reference Materials:
+${referenceChunks.other.map(c => c.content).join('\n')}
+
+Remember:
+1. Strictly adhere to the provided JSON structure
+2. Ensure all character arcs are fully developed
+3. Maintain consistent pacing and tone
+4. Balance exposition and action
+5. Incorporate thematic elements naturally
+
+Return ONLY valid JSON with no additional text or formatting.`;
+}
+
 function validateOutlineStructure(outline: any): boolean {
   try {
     // Check basic structure
@@ -51,20 +205,14 @@ serve(async (req) => {
       throw new Error('OpenAI API key is not configured. Please set it in the Supabase dashboard.');
     }
 
-    if (!openAiKey.startsWith('sk-')) {
-      console.error('Invalid OpenAI API key format');
-      throw new Error('Invalid OpenAI API key format. Please ensure you are using a valid OpenAI API key.');
-    }
-
     const { sessionId } = await req.json();
     console.log('Processing novel generation for session:', sessionId);
 
-    // Initialize Supabase client
+    // Initialize clients
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Initialize OpenAI client
+    
     console.log('Initializing OpenAI client...');
     const openai = new OpenAI({
       apiKey: openAiKey,
@@ -104,7 +252,7 @@ serve(async (req) => {
     const { data: chunks, error: searchError } = await supabase.rpc('match_story_chunks', {
       query_embedding: embedding,
       match_threshold: 0.7,
-      match_count: 10
+      match_count: 15 // Increased from 10 to get more relevant chunks
     });
 
     if (searchError) {
@@ -113,79 +261,37 @@ serve(async (req) => {
     }
 
     console.log('Found matching reference chunks:', chunks.length);
-    
-    // Log relevance scores for debugging
     chunks.forEach((chunk, index) => {
       console.log(`Chunk ${index + 1} relevance score:`, chunk.similarity);
       console.log(`Chunk ${index + 1} category:`, chunk.category);
     });
 
-    if (chunks.length < 3) {
-      console.warn('Warning: Found fewer than 3 relevant reference chunks');
-    }
+    // Organize and process reference chunks
+    const organizedChunks = organizeReferenceChunks(chunks);
+    console.log('Organized chunks by category:', Object.keys(organizedChunks));
 
-    // Prepare the prompt for outline generation
-    const systemPrompt = `You are a professional novel outline generator. Create a detailed novel outline based on the provided parameters and reference materials. The outline should include:
-    1. Overall structure
-    2. Chapter breakdowns with titles and summaries
-    3. Key plot points and scenes
-    4. Character arcs and interactions
-    5. Thematic elements
-
-    IMPORTANT: Return ONLY a valid JSON object with no markdown formatting or additional text. The response must be parseable by JSON.parse().
-    The JSON structure must be:
-    {
-      "chapters": [{
-        "chapterNumber": number,
-        "title": string,
-        "summary": string,
-        "scenes": [{
-          "id": string,
-          "sceneFocus": string,
-          "conflict": string,
-          "settingDetails": string,
-          "characterInvolvement": string[]
-        }]
-      }],
-      "metadata": {
-        "totalEstimatedWordCount": number,
-        "mainTheme": string,
-        "creationTimestamp": string
-      }
-    }`;
+    // Build enhanced prompts
+    const systemPrompt = buildSystemPrompt(session.parameters, organizedChunks);
+    const userPrompt = buildUserPrompt(session.parameters, organizedChunks);
 
     console.log('Sending request to OpenAI...');
-
-    // Generate outline using OpenAI
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `
-          Novel Parameters:
-          ${JSON.stringify(session.parameters, null, 2)}
-
-          Reference Materials:
-          ${chunks.map(chunk => chunk.content).join('\n\n')}
-
-          Remember to return ONLY valid JSON with no markdown or additional text.`
-        }
+        { role: "user", content: userPrompt }
       ],
       temperature: 0.7
     });
 
     console.log('Received response from OpenAI');
-    
-    // Clean up the response and attempt to parse it
     let responseContent = completion.choices[0].message.content;
     console.log('Raw response:', responseContent);
     
-    // Remove any markdown formatting if present
     if (responseContent.includes('```json')) {
       responseContent = responseContent.replace(/```json\n|\n```/g, '');
     }
     
-    // Remove any leading/trailing whitespace
     responseContent = responseContent.trim();
     
     let outline;
@@ -199,7 +305,6 @@ serve(async (req) => {
     
     console.log('Successfully parsed outline JSON');
 
-    // Validate outline structure
     if (!validateOutlineStructure(outline)) {
       throw new Error('Generated outline does not match required structure');
     }
