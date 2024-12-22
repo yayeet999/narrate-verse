@@ -130,6 +130,43 @@ function normalizeAndAdjustDimensions(dimensions: StoryDimensions, parameters: N
   return dimensions;
 }
 
+function buildEnhancedSystemPrompt(parameters: NovelParameters, dimensions: StoryDimensions): string {
+  return `You are a professional novel outline generator. Using the provided parameters and calculated story dimensions, create a detailed chapter-by-chapter outline.
+
+Key Story Dimensions (use these to guide the outline's depth and focus):
+- Complexity: ${dimensions.complexity} (affects subplot density and world detail)
+- Conflict: ${dimensions.conflict} (shapes tension and confrontation frequency)
+- Emotional Depth: ${dimensions.emotionalDepth} (guides character development)
+- Detail: ${dimensions.detail} (determines descriptive richness)
+- Pacing: ${dimensions.pacing} (influences chapter length and scene transitions)
+- Thematic Resonance: ${dimensions.thematicResonance} (ensures theme integration)
+- World Integration: ${dimensions.worldIntegration} (embeds setting into plot)
+
+Novel Parameters to strictly follow:
+- Genre: ${parameters.primaryGenre}${parameters.secondaryGenre ? ` with ${parameters.secondaryGenre} elements` : ''}
+- Theme: ${parameters.primaryTheme}${parameters.secondaryTheme ? ` and ${parameters.secondaryTheme}` : ''}
+- Setting: ${parameters.settingType}
+- Cultural Framework: ${parameters.culturalFramework}
+- POV: ${parameters.pov}
+- Story Structure: ${parameters.storyStructure}
+- Resolution Style: ${parameters.resolutionStyle}
+
+Content Guidelines:
+- Violence Level: ${parameters.violenceLevel}/5
+- Adult Content: ${parameters.adultContentLevel}/5
+- Profanity: ${parameters.profanityLevel}/5
+- Controversial Content: ${parameters.controversialHandling}
+
+Writing Style:
+- Formality: ${parameters.toneFormality}/5
+- Description Density: ${parameters.descriptionDensity}/5
+- Dialogue Balance: ${parameters.dialogueBalance}/5
+- Pacing: ${parameters.pacingOverall}/5
+- Emotional Intensity: ${parameters.emotionalIntensity}/5
+
+Generate a detailed novel outline following these exact specifications. Each chapter should include a title, summary, and key scenes. Maintain consistency with the genre conventions and thematic elements throughout the outline.`;
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
