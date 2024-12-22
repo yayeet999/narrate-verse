@@ -10,38 +10,7 @@ import {
   applyDimensionalGuidance,
   validateOutlineStructure 
 } from './validators/OutlineValidators';
-
-interface NovelScene {
-  id: string;
-  sceneFocus: string;
-  conflict: string;
-  settingDetails: string;
-  characterInvolvement: string[];
-  wordCount: number;
-  pacing: number;
-  tone: number;
-}
-
-interface NovelChapter {
-  chapterNumber: number;
-  title: string;
-  summary: string;
-  scenes: NovelScene[];
-  wordCountGoal: number;
-  pacingGuidance: number;
-  thematicElements: string[];
-  plotProgression: number;
-}
-
-interface NovelOutline {
-  chapters: NovelChapter[];
-  metadata: {
-    totalEstimatedWordCount: number;
-    mainTheme: string;
-    subThemes: string[];
-    creationTimestamp: string;
-  };
-}
+import { NovelChapter, NovelOutline } from './types';
 
 export class NovelOutlineGenerator {
   private parameters: NovelParameters;
@@ -82,7 +51,7 @@ export class NovelOutlineGenerator {
     const outline: NovelOutline = {
       chapters,
       metadata: {
-        totalEstimatedWordCount: calculateWordCounts(chapters),
+        totalEstimatedWordCount: calculateWordCounts.totalWordCount(chapters),
         mainTheme: this.parameters.primaryTheme,
         subThemes: this.parameters.secondaryTheme ? [this.parameters.secondaryTheme] : [],
         creationTimestamp: new Date().toISOString()
