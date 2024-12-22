@@ -3,7 +3,7 @@ import { BookOpen, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { getUserSubscriptionStatus } from "@/utils/subscriptionUtils";
 import { toast } from "sonner";
 import {
   Breadcrumb,
@@ -16,35 +16,10 @@ import {
 
 const NovelBuffer = () => {
   const navigate = useNavigate();
-
-  // Check user's subscription status
+  
   const { data: subscription, isLoading } = useQuery({
     queryKey: ['userSubscription'],
-    queryFn: async () => {
-      console.log('Checking user subscription status...');
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.user) {
-        throw new Error('No authenticated user found');
-      }
-
-      const { data, error } = await supabase
-        .from('user_subscriptions')
-        .select(`
-          *,
-          subscription_tiers (*)
-        `)
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching subscription:', error);
-        throw error;
-      }
-
-      console.log('Subscription data:', data);
-      return data;
-    }
+    queryFn: getUserSubscriptionStatus
   });
 
   const handleContinue = () => {
@@ -62,7 +37,7 @@ const NovelBuffer = () => {
   }
 
   // Check if user has paid access
-  const hasPaidAccess = subscription?.subscription_tiers?.type === 'paid';
+  const hasPaidAccess = subscription?.isPaid;
 
   if (!hasPaidAccess) {
     return (
