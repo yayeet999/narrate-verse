@@ -2,11 +2,10 @@ import { UseFormReturn } from 'react-hook-form';
 import { NovelParameters } from '@/types/novel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, Save } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 
 interface NovelPreviewStepProps {
   form: UseFormReturn<NovelParameters>;
@@ -14,37 +13,29 @@ interface NovelPreviewStepProps {
 }
 
 export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
-  const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
   const values = form.getValues();
 
-  const handleSave = async () => {
+  const handleStartGeneration = async () => {
     try {
-      setIsSaving(true);
+      setIsGenerating(true);
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
-        toast.error("You must be logged in to save a novel");
+        toast.error("You must be logged in to generate a novel");
         return;
       }
 
-      const { error } = await supabase
-        .from('story_generation_sessions')
-        .insert({
-          user_id: session.user.id,
-          parameters: values,
-          status: 'in_progress'
-        });
-
-      if (error) throw error;
-
-      toast.success('Novel parameters saved successfully!');
-      navigate('/dashboard/library');
+      // For now, just show a toast - actual generation logic will be added later
+      toast.success('Starting novel generation...');
+      // Will be replaced with actual generation logic and navigation
+      
     } catch (error) {
-      console.error('Error saving novel parameters:', error);
-      toast.error('Failed to save novel parameters');
+      console.error('Error starting novel generation:', error);
+      toast.error('Failed to start novel generation');
     } finally {
-      setIsSaving(false);
+      setIsGenerating(false);
     }
   };
 
@@ -99,18 +90,24 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
         <Button
           variant="outline"
           onClick={onBack}
-          disabled={isSaving}
+          disabled={isGenerating}
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
           Back to Settings
         </Button>
 
         <Button
-          onClick={handleSave}
-          disabled={isSaving}
+          onClick={handleStartGeneration}
+          disabled={isGenerating}
         >
-          <Save className="mr-2 h-4 w-4" />
-          {isSaving ? 'Saving...' : 'Save & Start Generation'}
+          {isGenerating ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Starting Generation...
+            </>
+          ) : (
+            'Start Novel Generation'
+          )}
         </Button>
       </div>
     </div>
