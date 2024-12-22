@@ -93,7 +93,8 @@ serve(async (req) => {
     4. Character arcs and interactions
     5. Thematic elements
 
-    Format the response as a JSON object with the following structure:
+    IMPORTANT: Return ONLY a valid JSON object with no markdown formatting or additional text. The response must be parseable by JSON.parse().
+    The JSON structure must be:
     {
       "chapters": [{
         "chapterNumber": number,
@@ -128,14 +129,35 @@ serve(async (req) => {
           Reference Materials:
           ${chunks.map(chunk => chunk.content).join('\n\n')}
 
-          Generate a comprehensive novel outline following these specifications.`
+          Remember to return ONLY valid JSON with no markdown or additional text.`
         }
       ],
       temperature: 0.7
     });
 
     console.log('Received response from OpenAI');
-    const outline = JSON.parse(completion.choices[0].message.content);
+    
+    // Clean up the response and attempt to parse it
+    let responseContent = completion.choices[0].message.content;
+    console.log('Raw response:', responseContent);
+    
+    // Remove any markdown formatting if present
+    if (responseContent.includes('```json')) {
+      responseContent = responseContent.replace(/```json\n|\n```/g, '');
+    }
+    
+    // Remove any leading/trailing whitespace
+    responseContent = responseContent.trim();
+    
+    let outline;
+    try {
+      outline = JSON.parse(responseContent);
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response:', parseError);
+      console.error('Response content:', responseContent);
+      throw new Error(`Failed to parse outline JSON: ${parseError.message}`);
+    }
+    
     console.log('Successfully parsed outline JSON');
 
     // Store the generated outline
