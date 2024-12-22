@@ -45,6 +45,13 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
 
       console.log('Created generation session:', generationSession.id);
 
+      // Trigger the edge function
+      const { error: functionError } = await supabase.functions.invoke('generate-novel-outline', {
+        body: { sessionId: generationSession.id }
+      });
+
+      if (functionError) throw functionError;
+
       // Navigate to the generation page
       navigate('/dashboard/create/novel/generation', {
         state: { sessionId: generationSession.id }
