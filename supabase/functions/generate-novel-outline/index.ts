@@ -47,103 +47,148 @@ function processMatchedParameters(parameters: any[]) {
   return categorizedParams;
 }
 
+function calculateDimensions(parameters: any, matchedParams: any) {
+  const dimensions = {
+    complexity: 0,
+    conflict: 0,
+    emotionalDepth: 0,
+    detail: 0,
+    tone: 0,
+    structuralExpansion: 0,
+    pacing: 0,
+    thematicResonance: 0,
+    culturalCohesion: 0,
+    characterChemistry: 0,
+    genreAuthenticity: 0,
+    narrativeMomentum: 0,
+    worldIntegration: 0
+  };
+
+  dimensions.complexity = calculateComplexity(parameters, matchedParams);
+  dimensions.conflict = calculateConflict(parameters, matchedParams);
+  dimensions.emotionalDepth = calculateEmotionalDepth(parameters);
+  dimensions.detail = calculateDetail(parameters);
+  dimensions.tone = calculateTone(parameters);
+  dimensions.structuralExpansion = calculateStructuralExpansion(parameters);
+  dimensions.pacing = calculatePacing(parameters);
+  dimensions.thematicResonance = calculateThematicResonance(parameters, matchedParams);
+  dimensions.culturalCohesion = calculateCulturalCohesion(parameters);
+  dimensions.characterChemistry = calculateCharacterChemistry(parameters);
+  dimensions.genreAuthenticity = calculateGenreAuthenticity(parameters, matchedParams);
+  dimensions.narrativeMomentum = calculateNarrativeMomentum(parameters);
+  dimensions.worldIntegration = calculateWorldIntegration(parameters);
+
+  applyGenreAdjustments(dimensions, parameters.primaryGenre);
+
+  return normalizeDimensions(dimensions);
+}
+
 function buildEnhancedSystemPrompt(parameters: any, matchedParams: any) {
+  const dimensions = calculateDimensions(parameters, matchedParams);
+  
   return `You are a professional novel outline generator specializing in ${parameters.primaryGenre} stories.
 
 WEIGHTED PARAMETER GUIDELINES:
-Genre Conventions (High Priority):
-${matchedParams.genre.join('\n')}
+${formatParameterGuidelines(matchedParams)}
 
-Thematic Elements:
-${matchedParams.theme.join('\n')}
+STORY DIMENSIONS:
+${formatDimensions(dimensions)}
 
-Narrative Structure:
-${matchedParams.structure.join('\n')}
-
-Writing Style:
-${matchedParams.style.join('\n')}
-
-Technical Requirements:
-${matchedParams.technical.join('\n')}
-
-Content Controls:
-${matchedParams.content.join('\n')}
-
-STORY DIMENSIONS TO CONSIDER:
-1. Complexity: ${calculateComplexityGuidance(parameters)}
-2. Conflict: ${calculateConflictGuidance(parameters)}
-3. Emotional Depth: ${calculateEmotionalDepthGuidance(parameters)}
-4. World Integration: ${calculateWorldIntegrationGuidance(parameters)}
-5. Pacing: ${calculatePacingGuidance(parameters)}
-
-STRICT REQUIREMENTS:
-1. Maintain absolute consistency with user parameters
-2. Follow weighted genre conventions while allowing for innovation
-3. Ensure character arcs align with provided archetypes
-4. Balance pacing according to specified preferences
-5. Incorporate thematic elements throughout the outline
-6. Respect content control parameters
+GENRE-SPECIFIC FRAMEWORK:
+${getGenreFramework(parameters.primaryGenre)}
 
 TECHNICAL REQUIREMENTS:
 1. Return ONLY a valid JSON object
 2. No markdown or additional text
 3. Must be parseable by JSON.parse()
-4. Follow exact structure specified in the user prompt`;
+4. Follow exact structure specified in the user prompt
+
+DIMENSION-BASED GUIDANCE:
+${generateDimensionGuidance(dimensions)}`;
 }
 
-function calculateComplexityGuidance(parameters: any): string {
-  const base = 1.0;
-  const worldFactor = parameters.worldComplexity * 0.2;
-  const culturalFactor = parameters.culturalDepth * 0.15;
-  const complexity = Math.min(base + worldFactor + culturalFactor, 2.5);
-  return `Target level ${complexity.toFixed(1)}/2.5 - Adjust subplot density and world-building detail accordingly`;
+function formatParameterGuidelines(matchedParams: any) {
+  return Object.entries(matchedParams)
+    .map(([category, params]) => {
+      return `${category.toUpperCase()}:\n${params.join('\n')}`;
+    })
+    .join('\n\n');
 }
 
-function calculateConflictGuidance(parameters: any): string {
-  const base = 1.0;
-  const violenceFactor = parameters.violenceLevel * 0.3;
-  const conflictTypes = parameters.conflictTypes.length * 0.2;
-  const conflict = Math.min(base + violenceFactor + conflictTypes, 2.5);
-  return `Target level ${conflict.toFixed(1)}/2.5 - Balance internal and external conflicts`;
+function formatDimensions(dimensions: any) {
+  return Object.entries(dimensions)
+    .map(([key, value]) => `${key}: ${value.toFixed(2)}/2.5 - ${getDimensionDescription(key)}`)
+    .join('\n');
 }
 
-function calculateEmotionalDepthGuidance(parameters: any): string {
-  const depth = parameters.emotionalIntensity * 0.5;
-  return `Target level ${depth.toFixed(1)}/2.5 - Focus on character emotional development`;
+function getDimensionDescription(dimension: string) {
+  const descriptions: Record<string, string> = {
+    complexity: "Subplot layering, world-building depth, political intricacies",
+    conflict: "Aggressiveness, moral or physical tension, confrontation scale",
+    emotionalDepth: "Character feelings, relationship dynamics, emotional impact",
+    detail: "Environmental descriptions, character details, action precision",
+    tone: "Overall mood, atmosphere, narrative voice",
+    structuralExpansion: "Plot complexity, chapter organization, narrative layers",
+    pacing: "Story rhythm, scene transitions, tension management",
+    thematicResonance: "Theme integration, symbolic depth, message clarity",
+    culturalCohesion: "World consistency, social dynamics, cultural authenticity",
+    characterChemistry: "Character interactions, relationship development, cast dynamics",
+    genreAuthenticity: "Genre convention adherence, trope usage, reader expectations",
+    narrativeMomentum: "Story progression, plot advancement, reader engagement",
+    worldIntegration: "Setting incorporation, world-building elements, environmental impact"
+  };
+  return descriptions[dimension] || "";
 }
 
-function calculateWorldIntegrationGuidance(parameters: any): string {
-  const integration = (parameters.worldComplexity + parameters.culturalDepth) * 0.3;
-  return `Target level ${integration.toFixed(1)}/2.5 - Weave setting elements into plot`;
+function getGenreFramework(genre: string) {
+  const frameworks: Record<string, string> = {
+    'High Fantasy': `
+- Increased complexity and detail requirements
+- World-building emphasis
+- Multiple kingdom/faction dynamics
+- Magic system integration
+- Epic scope and scale
+    `,
+    'Urban Fantasy': `
+- Modern world integration
+- Hidden supernatural elements
+- Character-driven narrative
+- Mystery/investigation elements
+- Reality/magic balance
+    `,
+    'Science Fiction': `
+- Technical detail requirements
+- Scientific plausibility
+- Future world-building
+- Technology impact themes
+- Social implications focus
+    `,
+    'Mystery': `
+- Clue placement
+- Red herring management
+- Investigation pacing
+- Character suspicion balance
+- Resolution satisfaction
+    `
+  };
+  return frameworks[genre] || "";
 }
 
-function calculatePacingGuidance(parameters: any): string {
-  const pacing = (parameters.pacingOverall + parameters.pacingVariance) * 0.3;
-  return `Target level ${pacing.toFixed(1)}/2.5 - Adjust scene and chapter rhythm`;
+function generateDimensionGuidance(dimensions: any) {
+  return Object.entries(dimensions)
+    .map(([dimension, value]) => generateGuidanceForDimension(dimension, value))
+    .join('\n');
 }
 
-function validateOutlineStructure(outline: any): boolean {
-  try {
-    if (!outline.chapters || !Array.isArray(outline.chapters)) return false;
-    if (!outline.metadata) return false;
-
-    for (const chapter of outline.chapters) {
-      if (!chapter.chapterNumber || !chapter.title || !chapter.summary) return false;
-      if (!chapter.scenes || !Array.isArray(chapter.scenes)) return false;
-
-      for (const scene of chapter.scenes) {
-        if (!scene.id || !scene.sceneFocus || !scene.conflict || !scene.settingDetails) return false;
-        if (!scene.characterInvolvement || !Array.isArray(scene.characterInvolvement)) return false;
-      }
-    }
-
-    if (!outline.metadata.totalEstimatedWordCount || !outline.metadata.mainTheme) return false;
-
-    return true;
-  } catch (error) {
-    console.error('Validation error:', error);
-    return false;
-  }
+function generateGuidanceForDimension(dimension: string, value: number) {
+  const guidanceMap: Record<string, (v: number) => string> = {
+    complexity: (v) => `Maintain complexity level ${v.toFixed(1)} through layered subplots and detailed world-building`,
+    conflict: (v) => `Balance conflict intensity at ${v.toFixed(1)} across personal and external challenges`,
+    emotionalDepth: (v) => `Develop emotional resonance to depth level ${v.toFixed(1)} in character interactions`,
+    // Add guidance for other dimensions
+  };
+  
+  return guidanceMap[dimension]?.(value) || `Maintain ${dimension} at level ${value.toFixed(1)}`;
 }
 
 serve(async (req) => {
@@ -234,7 +279,7 @@ Required JSON Structure:
 
     console.log('Sending request to OpenAI...');
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }

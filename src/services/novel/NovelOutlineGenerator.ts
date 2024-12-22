@@ -1,6 +1,15 @@
 import { NovelParameters } from '@/types/novel';
 import { ProcessedDimensions } from './ParameterProcessor';
 import { VectorChunk } from '../story/types';
+import { 
+  generateChapterStructure,
+  generateScenes,
+  calculateWordCounts
+} from './generators/OutlineGenerators';
+import { 
+  applyDimensionalGuidance,
+  validateOutlineStructure 
+} from './validators/OutlineValidators';
 
 interface NovelScene {
   id: string;
@@ -73,12 +82,18 @@ export class NovelOutlineGenerator {
     const outline: NovelOutline = {
       chapters,
       metadata: {
-        totalEstimatedWordCount: this.calculateTotalWordCount(chapters),
+        totalEstimatedWordCount: calculateWordCounts(chapters),
         mainTheme: this.parameters.primaryTheme,
         subThemes: this.parameters.secondaryTheme ? [this.parameters.secondaryTheme] : [],
         creationTimestamp: new Date().toISOString()
       }
     };
+
+    // Apply dimensional guidance
+    applyDimensionalGuidance(outline, this.dimensions);
+
+    // Validate structure
+    await validateOutlineStructure(outline);
 
     console.log('Outline generation complete:', {
       chapterCount: outline.chapters.length,
@@ -91,11 +106,14 @@ export class NovelOutlineGenerator {
   private calculateChapterCount(): number {
     const baseCount = this.baseChapterCounts[this.parameters.novelLength];
     const expansionFactor = this.dimensions.structuralExpansion;
-    const adjustedCount = Math.round(baseCount * expansionFactor);
+    const complexityFactor = Math.log1p(this.dimensions.complexity);
+    
+    const adjustedCount = Math.round(baseCount * expansionFactor * (1 + complexityFactor * 0.2));
     
     console.log('Calculated chapter count:', {
       baseCount,
       expansionFactor,
+      complexityFactor,
       adjustedCount
     });
     
@@ -107,33 +125,45 @@ export class NovelOutlineGenerator {
     totalChapters: number
   ): Promise<NovelChapter> {
     const plotPosition = chapterNumber / totalChapters;
-    const wordCountGoal = this.calculateChapterWordCount(plotPosition);
+    const wordCountGoal = calculateWordCounts.chapterWordCount(
+      this.parameters,
+      plotPosition,
+      this.dimensions
+    );
+    
     const pacingGuidance = this.calculatePacing(plotPosition);
     
-    const scenes = await this.generateScenes(
+    const scenes = await generateScenes(
       chapterNumber,
       wordCountGoal,
-      pacingGuidance
+      pacingGuidance,
+      this.dimensions,
+      this.parameters
     );
 
     return {
       chapterNumber,
-      title: `Chapter ${chapterNumber}`, // Will be enhanced with vector results
-      summary: this.generateChapterSummary(plotPosition, scenes),
+      title: generateChapterStructure.generateTitle(
+        chapterNumber,
+        plotPosition,
+        this.parameters,
+        this.dimensions
+      ),
+      summary: generateChapterStructure.generateSummary(
+        plotPosition,
+        scenes,
+        this.dimensions
+      ),
       scenes,
       wordCountGoal,
       pacingGuidance,
-      thematicElements: this.selectThematicElements(plotPosition),
+      thematicElements: generateChapterStructure.selectThematicElements(
+        plotPosition,
+        this.parameters,
+        this.dimensions
+      ),
       plotProgression: plotPosition
     };
-  }
-
-  private calculateChapterWordCount(plotPosition: number): number {
-    const averageChapterLength = this.parameters.averageChapterLength;
-    const varianceFactor = 0.2; // 20% variance
-    const positionAdjustment = Math.sin(plotPosition * Math.PI) * varianceFactor;
-    
-    return Math.round(averageChapterLength * (1 + positionAdjustment));
   }
 
   private calculatePacing(plotPosition: number): number {
@@ -147,63 +177,5 @@ export class NovelOutlineGenerator {
     if (plotPosition < 0.75) return 1.0; // Rising action
     if (plotPosition < 0.9) return 1.3;  // Climax
     return 0.7; // Resolution
-  }
-
-  private async generateScenes(
-    chapterNumber: number,
-    wordCountGoal: number,
-    pacingGuidance: number
-  ): Promise<NovelScene[]> {
-    const sceneCount = this.calculateSceneCount(pacingGuidance);
-    const scenes: NovelScene[] = [];
-
-    for (let i = 0; i < sceneCount; i++) {
-      scenes.push({
-        id: `ch${chapterNumber}_scene${i + 1}`,
-        sceneFocus: this.generateSceneFocus(i, sceneCount),
-        conflict: this.generateConflict(),
-        settingDetails: this.generateSettingDetails(),
-        characterInvolvement: this.selectCharacters(),
-        wordCount: Math.round(wordCountGoal / sceneCount),
-        pacing: pacingGuidance,
-        tone: this.dimensions.tone
-      });
-    }
-
-    return scenes;
-  }
-
-  private calculateSceneCount(pacing: number): number {
-    return Math.max(2, Math.round(3 + (pacing - 3) * 0.5));
-  }
-
-  private generateSceneFocus(sceneIndex: number, totalScenes: number): string {
-    return `Scene focus ${sceneIndex + 1}/${totalScenes}`;
-  }
-
-  private generateConflict(): string {
-    return "Conflict description";
-  }
-
-  private generateSettingDetails(): string {
-    return "Setting details";
-  }
-
-  private selectCharacters(): string[] {
-    return this.parameters.characters
-      .slice(0, 3)
-      .map(char => char.name);
-  }
-
-  private generateChapterSummary(plotPosition: number, scenes: NovelScene[]): string {
-    return `Chapter summary at ${Math.round(plotPosition * 100)}% of the story`;
-  }
-
-  private selectThematicElements(plotPosition: number): string[] {
-    return [this.parameters.primaryTheme];
-  }
-
-  private calculateTotalWordCount(chapters: NovelChapter[]): number {
-    return chapters.reduce((total, chapter) => total + chapter.wordCountGoal, 0);
   }
 }
