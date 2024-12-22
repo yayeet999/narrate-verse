@@ -1,4 +1,4 @@
-import { NovelParameters, NovelLength } from '@/types/novel';
+import { NovelParameters } from '@/types/novel';
 import { ProcessedDimensions } from './ParameterProcessor';
 import { VectorChunk } from '../story/types';
 
@@ -118,7 +118,7 @@ export class NovelOutlineGenerator {
 
     return {
       chapterNumber,
-      title: `Chapter ${chapterNumber}`, // Placeholder - will be enhanced
+      title: `Chapter ${chapterNumber}`, // Will be enhanced with vector results
       summary: this.generateChapterSummary(plotPosition, scenes),
       scenes,
       wordCountGoal,
@@ -143,7 +143,6 @@ export class NovelOutlineGenerator {
   }
 
   private getPlotIntensity(plotPosition: number): number {
-    // Implement three-act structure intensity curve
     if (plotPosition < 0.25) return 0.8; // Setup
     if (plotPosition < 0.75) return 1.0; // Rising action
     if (plotPosition < 0.9) return 1.3;  // Climax
@@ -175,22 +174,18 @@ export class NovelOutlineGenerator {
   }
 
   private calculateSceneCount(pacing: number): number {
-    // Faster pacing = more scenes
     return Math.max(2, Math.round(3 + (pacing - 3) * 0.5));
   }
 
   private generateSceneFocus(sceneIndex: number, totalScenes: number): string {
-    // Placeholder - will be enhanced with vector results
     return `Scene focus ${sceneIndex + 1}/${totalScenes}`;
   }
 
   private generateConflict(): string {
-    // Placeholder - will be enhanced with vector results
     return "Conflict description";
   }
 
   private generateSettingDetails(): string {
-    // Placeholder - will be enhanced with vector results
     return "Setting details";
   }
 
@@ -201,12 +196,10 @@ export class NovelOutlineGenerator {
   }
 
   private generateChapterSummary(plotPosition: number, scenes: NovelScene[]): string {
-    // Placeholder - will be enhanced with vector results
     return `Chapter summary at ${Math.round(plotPosition * 100)}% of the story`;
   }
 
   private selectThematicElements(plotPosition: number): string[] {
-    // Placeholder - will be enhanced with vector results
     return [this.parameters.primaryTheme];
   }
 
