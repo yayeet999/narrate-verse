@@ -1,5 +1,5 @@
 import { ProcessedDimensions } from '../ParameterProcessor';
-import { NovelOutline } from '../types';
+import { NovelOutline, WeightedTheme } from '../types';
 
 export const applyDimensionalGuidance = async (
   outline: NovelOutline,
@@ -16,11 +16,12 @@ export const applyDimensionalGuidance = async (
       chapter.pacingGuidance * (dimensions.pacing / 2.5)
     );
 
-    // Adjust thematic elements based on weighted dimensions
-    chapter.thematicElements = chapter.thematicElements.map(theme => ({
+    // Store weighted themes separately while keeping original thematic elements
+    const weightedThemes: WeightedTheme[] = chapter.thematicElements.map(theme => ({
       theme,
       weight: dimensions.thematicResonance / 2.5
     }));
+    chapter.weightedThemes = weightedThemes;
 
     // Adjust scenes based on weighted dimensions
     chapter.scenes = chapter.scenes.map(scene => ({

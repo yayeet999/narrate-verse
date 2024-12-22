@@ -1,5 +1,3 @@
-import { NovelParameters } from '@/types/novel';
-
 export interface NovelScene {
   id: string;
   sceneFocus: string;
@@ -11,6 +9,11 @@ export interface NovelScene {
   tone: number;
 }
 
+export interface WeightedTheme {
+  theme: string;
+  weight: number;
+}
+
 export interface NovelChapter {
   chapterNumber: number;
   title: string;
@@ -19,6 +22,7 @@ export interface NovelChapter {
   wordCountGoal: number;
   pacingGuidance: number;
   thematicElements: string[];
+  weightedThemes?: WeightedTheme[];  // Add this optional field for internal use
   plotProgression: number;
 }
 
