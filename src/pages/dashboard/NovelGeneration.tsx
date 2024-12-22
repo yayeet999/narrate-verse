@@ -37,6 +37,7 @@ const NovelGeneration = () => {
   const navigate = useNavigate();
   const [outline, setOutline] = useState<Outline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { sessionId } = (location.state as LocationState) || {};
 
   useEffect(() => {
@@ -48,6 +49,8 @@ const NovelGeneration = () => {
 
     const checkGenerationStatus = async () => {
       try {
+        console.log('Checking generation status for session:', sessionId);
+        
         const { data: session, error: sessionError } = await supabase
           .from('story_generation_sessions')
           .select('status, parameters')
@@ -55,6 +58,8 @@ const NovelGeneration = () => {
           .single();
 
         if (sessionError) throw sessionError;
+
+        console.log('Session status:', session.status);
 
         if (session.status === 'completed') {
           // Fetch the generated outline
@@ -67,16 +72,22 @@ const NovelGeneration = () => {
 
           if (outlineError) throw outlineError;
 
+          console.log('Fetched outline data:', outlineData);
+          
+          if (!outlineData?.content) {
+            throw new Error('No outline content found');
+          }
+
           setOutline(JSON.parse(outlineData.content));
           setIsLoading(false);
         } else if (session.status === 'failed') {
-          toast.error('Generation failed. Please try again.');
+          setError('Generation failed. Please try again.');
           setIsLoading(false);
         }
         // If still in progress, continue polling
       } catch (error) {
         console.error('Error checking generation status:', error);
-        toast.error('Failed to check generation status');
+        setError('Failed to check generation status');
         setIsLoading(false);
       }
     };
@@ -87,6 +98,21 @@ const NovelGeneration = () => {
 
     return () => clearInterval(interval);
   }, [sessionId, navigate]);
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <Card className="p-6">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={() => navigate('/dashboard/create/novel/setup')}>
+              Try Again
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   const renderOutline = () => {
     if (!outline) return null;
@@ -106,17 +132,23 @@ const NovelGeneration = () => {
         {outline.chapters.map((chapter) => (
           <Card key={chapter.chapterNumber} className="p-4">
             <h3 className="text-lg font-medium mb-2">
-              {chapter.title}
+              Chapter {chapter.chapterNumber}: {chapter.title}
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
               {chapter.summary}
             </p>
-            <div className="space-y-2">
+            <div className="space-y-4">
               {chapter.scenes.map((scene) => (
                 <div key={scene.id} className="pl-4 border-l-2 border-muted">
                   <p className="text-sm font-medium">{scene.sceneFocus}</p>
                   <p className="text-sm text-muted-foreground">
-                    {scene.conflict}
+                    Conflict: {scene.conflict}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Setting: {scene.settingDetails}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Characters: {scene.characterInvolvement.join(', ')}
                   </p>
                 </div>
               ))}
@@ -150,6 +182,7 @@ const NovelGeneration = () => {
           <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
             <Loader2 className="h-8 w-8 animate-spin" />
             <p className="text-muted-foreground">Generating your novel outline...</p>
+            <p className="text-sm text-muted-foreground">This may take a few minutes.</p>
           </div>
         ) : (
           renderOutline()

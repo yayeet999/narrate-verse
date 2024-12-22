@@ -28,6 +28,8 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
         return;
       }
 
+      console.log('Starting novel generation with parameters:', values);
+
       // Create a generation session
       const { data: generationSession, error: sessionError } = await supabase
         .from('story_generation_sessions')
@@ -41,6 +43,8 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
 
       if (sessionError) throw sessionError;
 
+      console.log('Created generation session:', generationSession.id);
+
       // Navigate to the generation page
       navigate('/dashboard/create/novel/generation', {
         state: { sessionId: generationSession.id }
@@ -53,6 +57,13 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
     }
   };
 
+  const renderSection = (title: string, content: React.ReactNode) => (
+    <Card className="p-4 mb-4">
+      <h3 className="font-medium mb-2">{title}</h3>
+      {content}
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -62,30 +73,73 @@ export function NovelPreviewStep({ form, onBack }: NovelPreviewStepProps) {
         </p>
       </div>
 
-      <Card className="p-4">
-        <h3 className="font-medium mb-2">Title</h3>
-        <p>{values.title}</p>
-      </Card>
+      {renderSection("Core Structure", (
+        <div className="space-y-2">
+          <p><span className="font-medium">Title:</span> {values.title}</p>
+          <p><span className="font-medium">Novel Length:</span> {values.novelLength}</p>
+          <p><span className="font-medium">Chapter Structure:</span> {values.chapterStructure}</p>
+          <p><span className="font-medium">Average Chapter Length:</span> {values.averageChapterLength} words</p>
+          <p><span className="font-medium">Chapter Naming Style:</span> {values.chapterNamingStyle}</p>
+        </div>
+      ))}
 
-      <Card className="p-4">
-        <h3 className="font-medium mb-2">Novel Length</h3>
-        <p>{values.novelLength}</p>
-      </Card>
+      {renderSection("Genre & Theme", (
+        <div className="space-y-2">
+          <p><span className="font-medium">Primary Genre:</span> {values.primaryGenre}</p>
+          <p><span className="font-medium">Secondary Genre:</span> {values.secondaryGenre || 'None'}</p>
+          <p><span className="font-medium">Primary Theme:</span> {values.primaryTheme}</p>
+          <p><span className="font-medium">Secondary Theme:</span> {values.secondaryTheme || 'None'}</p>
+        </div>
+      ))}
 
-      <Card className="p-4">
-        <h3 className="font-medium mb-2">Chapter Structure</h3>
-        <p>{values.chapterStructure}</p>
-      </Card>
+      {renderSection("Setting & World", (
+        <div className="space-y-2">
+          <p><span className="font-medium">Setting Type:</span> {values.settingType}</p>
+          <p><span className="font-medium">World Complexity:</span> {values.worldComplexity}/5</p>
+          <p><span className="font-medium">Cultural Depth:</span> {values.culturalDepth}/5</p>
+          <p><span className="font-medium">Cultural Framework:</span> {values.culturalFramework}</p>
+        </div>
+      ))}
 
-      <Card className="p-4">
-        <h3 className="font-medium mb-2">Average Chapter Length</h3>
-        <p>{values.averageChapterLength} words</p>
-      </Card>
+      {renderSection("Characters", (
+        <div className="space-y-2">
+          {values.characters.map((char, index) => (
+            <div key={index} className="border-b last:border-0 pb-2">
+              <p><span className="font-medium">Name:</span> {char.name}</p>
+              <p><span className="font-medium">Role:</span> {char.role}</p>
+              <p><span className="font-medium">Archetype:</span> {char.archetype}</p>
+            </div>
+          ))}
+        </div>
+      ))}
 
-      <Card className="p-4">
-        <h3 className="font-medium mb-2">Chapter Naming Style</h3>
-        <p>{values.chapterNamingStyle}</p>
-      </Card>
+      {renderSection("Narrative Style", (
+        <div className="space-y-2">
+          <p><span className="font-medium">POV:</span> {values.pov}</p>
+          <p><span className="font-medium">Story Structure:</span> {values.storyStructure}</p>
+          <p><span className="font-medium">Resolution Style:</span> {values.resolutionStyle}</p>
+          <p><span className="font-medium">Conflict Types:</span> {values.conflictTypes.join(', ')}</p>
+        </div>
+      ))}
+
+      {renderSection("Writing Style", (
+        <div className="space-y-2">
+          <p><span className="font-medium">Tone Formality:</span> {values.toneFormality}/5</p>
+          <p><span className="font-medium">Description Density:</span> {values.descriptionDensity}/5</p>
+          <p><span className="font-medium">Dialogue Balance:</span> {values.dialogueBalance}/5</p>
+          <p><span className="font-medium">Pacing:</span> {values.pacingOverall}/5</p>
+          <p><span className="font-medium">Emotional Intensity:</span> {values.emotionalIntensity}/5</p>
+        </div>
+      ))}
+
+      {renderSection("Content Controls", (
+        <div className="space-y-2">
+          <p><span className="font-medium">Violence Level:</span> {values.violenceLevel}/5</p>
+          <p><span className="font-medium">Adult Content Level:</span> {values.adultContentLevel}/5</p>
+          <p><span className="font-medium">Profanity Level:</span> {values.profanityLevel}/5</p>
+          <p><span className="font-medium">Controversial Content Handling:</span> {values.controversialHandling}</p>
+        </div>
+      ))}
 
       <div className="flex justify-between pt-6">
         <Button
