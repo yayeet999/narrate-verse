@@ -1,59 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Loader2, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/DashboardLayout';
+import { NovelGenerationHeader } from '@/components/novel/NovelGenerationHeader';
+import { NovelGenerationStatus } from '@/components/novel/NovelGenerationStatus';
+import { NovelOutlineDisplay } from '@/components/novel/NovelOutlineDisplay';
+import type { NovelOutline } from '@/services/novel/types';
 
 interface LocationState {
   sessionId?: string;
-}
-
-interface NovelOutline {
-  title: string;
-  storyDescription: string;
-  chapters: Array<{
-    chapterNumber: number;
-    chapterName: string;
-    chapterSummary: string;
-    keyPlotPoints: string[];
-  }>;
-  characters: Array<{
-    name: string;
-    role: string;
-    characterArc: string;
-  }>;
-  themes: string[];
-  worldDetails: {
-    setting: string;
-    worldComplexity: number;
-    culturalDepth: number;
-  };
-  refinements?: {
-    narrativeIntensification?: {
-      tensionPoints: Array<{
-        chapter: number;
-        intensity: number;
-        emotionalImpact: string;
-        buildupNotes: string;
-      }>;
-      pacingAnalysis: string;
-      dramaticPeaks: string[];
-    };
-    psychologicalComplexity?: {
-      characterDepth: Array<{
-        character: string;
-        internalConflicts: string[];
-        motivationLayers: string[];
-        backstoryInfluences: string[];
-      }>;
-      decisionPoints: string[];
-    };
-    // Additional refinement categories can be added here
-  };
-  additionalNotes: string;
 }
 
 const NovelGeneration = () => {
@@ -61,8 +17,54 @@ const NovelGeneration = () => {
   const navigate = useNavigate();
   const [outline, setOutline] = useState<NovelOutline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefining, setIsRefining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const { sessionId } = (location.state as LocationState) || {};
+
+  const startRefinement = async (outlineData: NovelOutline) => {
+    try {
+      setIsRefining(true);
+      console.log('Starting refinement process for session:', sessionId);
+
+      const { error: refinementError } = await supabase.functions.invoke('generate-novel-refinement', {
+        body: { 
+          outline: outlineData,
+          sessionId 
+        }
+      });
+
+      if (refinementError) throw refinementError;
+
+      // Wait for the refined outline to be stored
+      const { data: refinedData, error: fetchError } = await supabase
+        .from('story_generation_data')
+        .select('content')
+        .eq('session_id', sessionId)
+        .eq('data_type', 'outline')
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      console.log('Refinement complete, updating UI');
+      setOutline(JSON.parse(refinedData.content));
+      setIsRefining(false);
+      setRetryCount(0);
+
+    } catch (error) {
+      console.error('Error in refinement process:', error);
+      
+      if (retryCount < 3) {
+        console.log(`Retrying refinement (attempt ${retryCount + 1} of 3)`);
+        setRetryCount(prev => prev + 1);
+        await startRefinement(outlineData);
+      } else {
+        toast.error('Failed to refine outline after multiple attempts');
+        setIsRefining(false);
+        setRetryCount(0);
+      }
+    }
+  };
 
   useEffect(() => {
     if (!sessionId) {
@@ -101,8 +103,14 @@ const NovelGeneration = () => {
             throw new Error('No outline content found');
           }
 
-          setOutline(JSON.parse(outlineData.content));
+          const parsedOutline = JSON.parse(outlineData.content);
+          setOutline(parsedOutline);
           setIsLoading(false);
+
+          // Start refinement process if we haven't already refined the outline
+          if (!parsedOutline.refinements) {
+            await startRefinement(parsedOutline);
+          }
         } else if (session.status === 'failed') {
           setError('Generation failed. Please try again.');
           setIsLoading(false);
@@ -120,182 +128,18 @@ const NovelGeneration = () => {
     return () => clearInterval(interval);
   }, [sessionId, navigate]);
 
-  const renderContent = () => {
-    if (error) {
-      return (
-        <Card className="p-6">
-          <div className="text-center">
-            <p className="text-red-500 mb-4">{error}</p>
-            <Button onClick={() => navigate('/dashboard/create/novel/setup')}>
-              Try Again
-            </Button>
-          </div>
-        </Card>
-      );
-    }
-
-    if (isLoading) {
-      return (
-        <Card className="p-6">
-          <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-            <Loader2 className="h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground">Generating your novel outline...</p>
-            <p className="text-sm text-muted-foreground">This may take a few minutes.</p>
-          </div>
-        </Card>
-      );
-    }
-
-    if (!outline) return null;
-
-    return (
-      <div className="space-y-6">
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold">{outline.title}</h2>
-          <p className="text-muted-foreground mt-2">
-            {outline.storyDescription}
-          </p>
-        </div>
-
-        <Card className="p-4">
-          <h3 className="text-lg font-medium mb-2">World Details</h3>
-          <p className="text-sm text-muted-foreground mb-2">{outline.worldDetails.setting}</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium">World Complexity</p>
-              <p className="text-sm text-muted-foreground">{outline.worldDetails.worldComplexity}/5</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Cultural Depth</p>
-              <p className="text-sm text-muted-foreground">{outline.worldDetails.culturalDepth}/5</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <h3 className="text-lg font-medium mb-2">Themes</h3>
-          <div className="flex flex-wrap gap-2">
-            {outline.themes.map((theme, index) => (
-              <span key={index} className="px-2 py-1 bg-muted rounded-md text-sm">
-                {theme}
-              </span>
-            ))}
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <h3 className="text-lg font-medium mb-2">Characters</h3>
-          <div className="space-y-4">
-            {outline.characters.map((character, index) => (
-              <div key={index} className="border-b last:border-0 pb-4 last:pb-0">
-                <p className="font-medium">{character.name}</p>
-                <p className="text-sm text-muted-foreground">Role: {character.role}</p>
-                <p className="text-sm text-muted-foreground">{character.characterArc}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <div className="space-y-4">
-          {outline.chapters.map((chapter) => (
-            <Card key={chapter.chapterNumber} className="p-4">
-              <h3 className="text-lg font-medium mb-2">
-                Chapter {chapter.chapterNumber}: {chapter.chapterName}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {chapter.chapterSummary}
-              </p>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Key Plot Points:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  {chapter.keyPlotPoints.map((point, index) => (
-                    <li key={index} className="text-sm text-muted-foreground">
-                      {point}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {outline.refinements && (
-          <>
-            <Card className="p-4">
-              <h3 className="text-lg font-medium mb-2">Narrative Analysis</h3>
-              {outline.refinements.narrativeIntensification && (
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium">Tension Points</h4>
-                    {outline.refinements.narrativeIntensification.tensionPoints.map((point, index) => (
-                      <div key={index} className="mt-2">
-                        <p className="text-sm">Chapter {point.chapter}: {point.emotionalImpact}</p>
-                        <p className="text-sm text-muted-foreground">{point.buildupNotes}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <h4 className="font-medium">Pacing Analysis</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {outline.refinements.narrativeIntensification.pacingAnalysis}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </Card>
-
-            <Card className="p-4">
-              <h3 className="text-lg font-medium mb-2">Character Depth</h3>
-              {outline.refinements.psychologicalComplexity?.characterDepth.map((char, index) => (
-                <div key={index} className="mb-4 last:mb-0">
-                  <h4 className="font-medium">{char.character}</h4>
-                  <div className="mt-2 space-y-2">
-                    <div>
-                      <p className="text-sm font-medium">Internal Conflicts</p>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground">
-                        {char.internalConflicts.map((conflict, i) => (
-                          <li key={i}>{conflict}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Motivation Layers</p>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground">
-                        {char.motivationLayers.map((layer, i) => (
-                          <li key={i}>{layer}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </Card>
-          </>
-        )}
-      </div>
-    );
-  };
-
   return (
     <DashboardLayout>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/dashboard/create/novel/setup')}
-            className="mb-4"
-          >
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Setup
-          </Button>
-
-          <h1 className="text-3xl font-bold tracking-tight">Novel Generation</h1>
-          <p className="text-muted-foreground">
-            {isLoading ? 'Generating your novel outline...' : 'Review your generated outline'}
-          </p>
-        </div>
-
-        {renderContent()}
+        <NovelGenerationHeader />
+        <NovelGenerationStatus 
+          isLoading={isLoading}
+          error={error}
+          isRefining={isRefining}
+        />
+        {outline && !isLoading && !isRefining && (
+          <NovelOutlineDisplay outline={outline} />
+        )}
       </div>
     </DashboardLayout>
   );
