@@ -16,17 +16,54 @@ export interface WeightedTheme {
 
 export interface NovelChapter {
   chapterNumber: number;
+  chapterName: string;
   title: string;
   summary: string;
   scenes: NovelScene[];
   wordCountGoal: number;
   pacingGuidance: number;
   thematicElements: string[];
-  weightedThemes?: WeightedTheme[];  // Add this optional field for internal use
+  weightedThemes?: WeightedTheme[];
   plotProgression: number;
+  chapterSummary: string;
+  keyPlotPoints: string[];
+}
+
+export interface TensionPoint {
+  chapter: number;
+  emotionalImpact: string;
+  buildupNotes: string;
+}
+
+export interface NarrativeIntensification {
+  tensionPoints: TensionPoint[];
+  pacingAnalysis: string;
+}
+
+export interface CharacterDepthInfo {
+  character: string;
+  internalConflicts: string[];
+  motivationLayers: string[];
+}
+
+export interface PsychologicalComplexity {
+  characterDepth: CharacterDepthInfo[];
+}
+
+export interface NovelRefinements {
+  narrativeIntensification: NarrativeIntensification;
+  psychologicalComplexity: PsychologicalComplexity;
+}
+
+export interface WorldDetails {
+  setting: string;
+  worldComplexity: number;
+  culturalDepth: number;
 }
 
 export interface NovelOutline {
+  title: string;
+  storyDescription: string;
   chapters: NovelChapter[];
   metadata: {
     totalEstimatedWordCount: number;
@@ -34,4 +71,12 @@ export interface NovelOutline {
     subThemes: string[];
     creationTimestamp: string;
   };
+  worldDetails: WorldDetails;
+  themes: string[];
+  characters: Array<{
+    name: string;
+    role: string;
+    characterArc: string;
+  }>;
+  refinements?: NovelRefinements;
 }
