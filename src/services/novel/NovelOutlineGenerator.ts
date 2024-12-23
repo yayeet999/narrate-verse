@@ -57,13 +57,29 @@ export class NovelOutlineGenerator {
     }
 
     const outline: NovelOutline = {
+      title: this.parameters.title,
+      storyDescription: this.parameters.storyDescription || '',
       chapters,
       metadata: {
         totalEstimatedWordCount: calculateWordCounts.totalWordCount(chapters),
         mainTheme: this.parameters.primaryTheme,
         subThemes: this.parameters.secondaryTheme ? [this.parameters.secondaryTheme] : [],
         creationTimestamp: new Date().toISOString()
-      }
+      },
+      worldDetails: {
+        setting: this.parameters.settingType,
+        worldComplexity: this.parameters.worldComplexity,
+        culturalDepth: this.parameters.culturalDepth
+      },
+      themes: [
+        this.parameters.primaryTheme,
+        ...(this.parameters.secondaryTheme ? [this.parameters.secondaryTheme] : [])
+      ],
+      characters: this.parameters.characters.map(char => ({
+        name: char.name,
+        role: char.role,
+        characterArc: char.arcType
+      }))
     };
 
     await this.applyWeightedGuidance(outline);
@@ -75,6 +91,82 @@ export class NovelOutlineGenerator {
     });
 
     return outline;
+  }
+
+  private async generateChapter(
+    chapterNumber: number,
+    totalChapters: number
+  ): Promise<NovelChapter> {
+    const plotPosition = chapterNumber / totalChapters;
+    const wordCountGoal = calculateWordCounts.chapterWordCount(
+      this.parameters,
+      plotPosition,
+      this.dimensions
+    );
+    
+    const pacingGuidance = this.calculatePacing(plotPosition);
+    
+    const scenes = await generateScenes(
+      chapterNumber,
+      wordCountGoal,
+      pacingGuidance,
+      this.dimensions,
+      this.parameters
+    );
+
+    const chapterTitle = generateChapterStructure.generateTitle(
+      chapterNumber,
+      plotPosition,
+      this.parameters,
+      this.dimensions
+    );
+
+    const summary = generateChapterStructure.generateSummary(
+      plotPosition,
+      scenes,
+      this.dimensions
+    );
+
+    return {
+      chapterNumber,
+      chapterName: chapterTitle,
+      title: chapterTitle,
+      summary,
+      scenes,
+      wordCountGoal,
+      pacingGuidance,
+      thematicElements: generateChapterStructure.selectThematicElements(
+        plotPosition,
+        this.parameters,
+        this.dimensions
+      ),
+      weightedThemes: this.generateWeightedThemes(plotPosition),
+      plotProgression: plotPosition,
+      chapterSummary: summary,
+      keyPlotPoints: this.generateKeyPlotPoints(scenes, plotPosition)
+    };
+  }
+
+  private generateKeyPlotPoints(scenes: NovelScene[], plotPosition: number): string[] {
+    return scenes.map(scene => scene.sceneFocus).filter(Boolean);
+  }
+
+  private generateWeightedThemes(plotPosition: number): WeightedTheme[] {
+    const themes: WeightedTheme[] = [
+      {
+        theme: this.parameters.primaryTheme,
+        weight: 1.0
+      }
+    ];
+
+    if (this.parameters.secondaryTheme) {
+      themes.push({
+        theme: this.parameters.secondaryTheme,
+        weight: 0.7
+      });
+    }
+
+    return themes;
   }
 
   private async ensureParameterEmbeddings(): Promise<void> {
@@ -179,64 +271,5 @@ export class NovelOutlineGenerator {
     });
     
     return adjustedCount;
-  }
-
-  private async generateChapter(
-    chapterNumber: number,
-    totalChapters: number
-  ): Promise<NovelChapter> {
-    const plotPosition = chapterNumber / totalChapters;
-    const wordCountGoal = calculateWordCounts.chapterWordCount(
-      this.parameters,
-      plotPosition,
-      this.dimensions
-    );
-    
-    const pacingGuidance = this.calculatePacing(plotPosition);
-    
-    const scenes = await generateScenes(
-      chapterNumber,
-      wordCountGoal,
-      pacingGuidance,
-      this.dimensions,
-      this.parameters
-    );
-
-    return {
-      chapterNumber,
-      title: generateChapterStructure.generateTitle(
-        chapterNumber,
-        plotPosition,
-        this.parameters,
-        this.dimensions
-      ),
-      summary: generateChapterStructure.generateSummary(
-        plotPosition,
-        scenes,
-        this.dimensions
-      ),
-      scenes,
-      wordCountGoal,
-      pacingGuidance,
-      thematicElements: generateChapterStructure.selectThematicElements(
-        plotPosition,
-        this.parameters,
-        this.dimensions
-      ),
-      plotProgression: plotPosition
-    };
-  }
-
-  private calculatePacing(plotPosition: number): number {
-    const basePacing = this.dimensions.pacing;
-    const plotIntensity = this.getPlotIntensity(plotPosition);
-    return Math.min(5, basePacing * plotIntensity);
-  }
-
-  private getPlotIntensity(plotPosition: number): number {
-    if (plotPosition < 0.25) return 0.8; // Setup
-    if (plotPosition < 0.75) return 1.0; // Rising action
-    if (plotPosition < 0.9) return 1.3;  // Climax
-    return 0.7; // Resolution
   }
 }
