@@ -6,16 +6,22 @@ import OpenAI from "https://deno.land/x/openai@v4.24.0/mod.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 204
+    });
   }
 
   try {
     const openAiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAiKey) {
+      console.error('OpenAI API key is not configured');
       throw new Error('OpenAI API key is not configured');
     }
 
@@ -23,11 +29,19 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase configuration is missing');
       throw new Error('Supabase configuration is missing');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    console.log('Parsing request body...');
     const { outline, sessionId } = await req.json();
+    
+    if (!outline || !sessionId) {
+      console.error('Missing required parameters:', { hasOutline: !!outline, hasSessionId: !!sessionId });
+      throw new Error('Missing required parameters: outline and sessionId are required');
+    }
     
     console.log('Starting outline refinement for session:', sessionId);
 
@@ -50,8 +64,9 @@ ${JSON.stringify(outline, null, 2)}
 
 Provide a refined version that maintains the same core story but adds these layers of depth and detail. Return ONLY valid JSON that follows the original structure but includes the new sections.`;
 
+    console.log('Sending request to OpenAI...');
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4",
       messages: [
         { role: "system", content: "You are an expert novel outline refinement system." },
         { role: "user", content: refinementPrompt }
@@ -68,25 +83,39 @@ Provide a refined version that maintains the same core story but adds these laye
     
     refinedOutline = refinedOutline.trim();
     
-    // Parse to validate JSON
-    const parsedOutline = JSON.parse(refinedOutline);
-    console.log('Successfully parsed refined outline');
+    try {
+      // Parse to validate JSON
+      const parsedOutline = JSON.parse(refinedOutline);
+      console.log('Successfully parsed refined outline');
 
-    // Store the refined outline
-    const { error: storeError } = await supabase
-      .from('story_generation_data')
-      .update({ content: JSON.stringify(parsedOutline) })
-      .eq('session_id', sessionId)
-      .eq('data_type', 'outline');
+      // Store the refined outline
+      const { error: storeError } = await supabase
+        .from('story_generation_data')
+        .update({ content: JSON.stringify(parsedOutline) })
+        .eq('session_id', sessionId)
+        .eq('data_type', 'outline');
 
-    if (storeError) throw storeError;
+      if (storeError) {
+        console.error('Error storing refined outline:', storeError);
+        throw storeError;
+      }
 
-    console.log('Successfully stored refined outline');
+      console.log('Successfully stored refined outline');
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      return new Response(
+        JSON.stringify({ success: true }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          },
+          status: 200
+        }
+      );
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response:', parseError);
+      throw new Error(`Invalid JSON response from OpenAI: ${parseError.message}`);
+    }
 
   } catch (error) {
     console.error('Error in generate-novel-refinement function:', error);
