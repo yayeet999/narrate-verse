@@ -20,11 +20,18 @@ const NovelGeneration = () => {
   const [isRefining, setIsRefining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [hasStartedRefinement, setHasStartedRefinement] = useState(false);
   const { sessionId } = (location.state as LocationState) || {};
 
   const startRefinement = async (outlineData: NovelOutline) => {
     try {
+      if (hasStartedRefinement) {
+        console.log('Refinement already started, skipping');
+        return;
+      }
+
       setIsRefining(true);
+      setHasStartedRefinement(true);
       console.log('Starting refinement process for session:', sessionId);
 
       const { error: refinementError } = await supabase.functions.invoke('generate-novel-refinement', {
@@ -107,8 +114,8 @@ const NovelGeneration = () => {
           setOutline(parsedOutline);
           setIsLoading(false);
 
-          // Start refinement process if we haven't already refined the outline
-          if (!parsedOutline.refinements) {
+          // Only start refinement if we haven't refined yet and there are no refinements
+          if (!hasStartedRefinement && !parsedOutline.refinements) {
             await startRefinement(parsedOutline);
           }
         } else if (session.status === 'failed') {
@@ -126,7 +133,7 @@ const NovelGeneration = () => {
     checkGenerationStatus();
 
     return () => clearInterval(interval);
-  }, [sessionId, navigate]);
+  }, [sessionId, navigate, hasStartedRefinement]);
 
   return (
     <DashboardLayout>
