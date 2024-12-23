@@ -10,7 +10,7 @@ import {
   applyDimensionalGuidance,
   validateOutlineStructure 
 } from './validators/OutlineValidators';
-import { NovelChapter, NovelOutline } from './types';
+import { NovelChapter, NovelOutline, NovelScene, WeightedTheme } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
 export class NovelOutlineGenerator {
@@ -167,6 +167,19 @@ export class NovelOutlineGenerator {
     }
 
     return themes;
+  }
+
+  private calculatePacing(plotPosition: number): number {
+    const basePacing = this.dimensions.pacing;
+    const plotIntensity = this.getPlotIntensity(plotPosition);
+    return Math.min(5, basePacing * plotIntensity);
+  }
+
+  private getPlotIntensity(plotPosition: number): number {
+    if (plotPosition < 0.25) return 0.8; // Setup
+    if (plotPosition < 0.75) return 1.0; // Rising action
+    if (plotPosition < 0.9) return 1.3;  // Climax
+    return 0.7; // Resolution
   }
 
   private async ensureParameterEmbeddings(): Promise<void> {
