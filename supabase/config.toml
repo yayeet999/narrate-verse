@@ -25,5 +25,8 @@ verify_jwt = true
 [functions.generate-novel-outline]
 verify_jwt = true
 
+[functions.generate-novel-refinement]
+verify_jwt = true
+
 [functions.ingest-reference-chunks]
 verify_jwt = false
